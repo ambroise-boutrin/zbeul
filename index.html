@@ -452,6 +452,34 @@ body[data-game=bt] .btn{border-radius:999px}
 .buzz{grid-column:1/-1;aspect-ratio:1;max-width:260px;width:100%;margin:0 auto;border-radius:50%;border:6px solid var(--ink);background:radial-gradient(circle at 35% 30%,#FF8FB8,#FF1F5A 60%,#B0103F);color:#fff;font-family:var(--display);font-size:44px;box-shadow:0 10px 0 var(--ink);cursor:pointer}
 .buzz:active{transform:translateY(8px);box-shadow:0 2px 0 var(--ink)}
 .buzz:disabled{filter:grayscale(.6);opacity:.7}
+
+/* ===== cartes de rôle (Loup-garou) ===== */
+.rcard{container-type:inline-size;--t1:#1E5631;--t2:#0B2416;--gl:#7FE0A0;position:relative;width:min(270px,76vw);aspect-ratio:5/7;margin:0 auto;border-radius:18px;padding:10px;background:linear-gradient(145deg,#E9D8A6,#B8955A 40%,#F3E6C4 60%,#9C7A3C);box-shadow:0 14px 30px rgba(0,0,0,.45);color:#F7F0DC;font-family:"Cinzel",Georgia,serif;max-width:100%}
+.rcard.wolf{--t1:#7A0F1A;--t2:#1E0508;--gl:#FF5A6E}
+.rcard.solo{--t1:#5B3A8C;--t2:#160B2B;--gl:#FFD86B}
+.rcard .in{position:relative;height:100%;box-sizing:border-box;border-radius:12px;border:2px solid rgba(255,240,200,.75);outline:1px solid rgba(60,40,10,.6);outline-offset:-6px;overflow:hidden;
+  background:radial-gradient(circle at 50% 38%,var(--t1),var(--t2) 72%);display:flex;flex-direction:column;align-items:center;padding:14px 12px 12px;gap:6px;text-align:center}
+.rcard .in::before{content:"";position:absolute;inset:0;background:repeating-conic-gradient(from 0deg at 50% 38%,rgba(255,255,255,.06) 0 6deg,transparent 6deg 12deg);pointer-events:none}
+.rcard .tm{position:relative;font-size:3.8cqw;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--gl)}
+.rcard .orb{position:relative;flex:1;width:100%;display:grid;place-items:center;min-height:0}
+.rcard .orb::before{content:"";position:absolute;width:64%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--gl) 45%,transparent),transparent 68%);filter:blur(4px)}
+.rcard .orb::after{content:"";position:absolute;width:58%;aspect-ratio:1;border-radius:50%;border:2px dashed rgba(255,240,200,.35)}
+.rcard .em{position:relative;font-size:30cqw;line-height:1;filter:drop-shadow(0 6px 10px rgba(0,0,0,.55))}
+.rcard.white .em{filter:grayscale(1) brightness(2.2) drop-shadow(0 0 12px #fff)}
+.rcard .nm{position:relative;font-size:9.4cqw;font-weight:900;line-height:1.05;color:#FFF6DD;text-shadow:0 2px 0 rgba(0,0,0,.4);text-wrap:balance}
+.rcard .rule{position:relative;width:60%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,240,200,.8),transparent)}
+.rcard .pw{position:relative;font-family:"Archivo",system-ui,sans-serif;font-size:4.7cqw;line-height:1.32;color:#F3EAD3}
+.rcard .cn{position:absolute;font-size:4.4cqw;color:rgba(255,240,200,.8)}
+.rcard .cn.a{top:6px;left:8px}.rcard .cn.b{top:6px;right:8px}.rcard .cn.c{bottom:6px;left:8px}.rcard .cn.d{bottom:6px;right:8px}
+.rcard.back .in{background:radial-gradient(circle at 50% 45%,#2A2260,#0B1026 70%);justify-content:center}
+.rcard.back .em{font-size:80px}
+@keyframes cardFlip{0%{transform:perspective(900px) rotateY(180deg) scale(.9)}100%{transform:perspective(900px) rotateY(0) scale(1)}}
+.rcard.flipin{animation:cardFlip .75s cubic-bezier(.2,.9,.25,1.15) both}
+.secret.hascard{background:none!important;border:none;box-shadow:none;padding:6px 0;min-height:0}
+.cardgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.cardgrid .rcard{width:100%;font-size:80%}
+.cardgrid .rcard{padding:6px;border-radius:12px}.cardgrid .rcard .in{padding:8px 6px;gap:3px}
+@media (prefers-reduced-motion:reduce){.rcard.flipin{animation:none}}
 </style>
 
 <div id="fx" aria-hidden="true"></div>
@@ -632,6 +660,7 @@ body[data-game=bt] .btn{border-radius:999px}
           <div><b>Loups-garous</b><small>Conseil : 1 loup pour 4 joueurs</small></div>
           <div class="step"><button type="button" id="lgMinus" aria-label="Moins de loups">−</button><output id="lgWolves">1</output><button type="button" id="lgPlus" aria-label="Plus de loups">+</button></div>
         </div>
+        <details class="rules" id="lgCardBox" style="margin-bottom:8px"><summary class="label" style="cursor:pointer">🃏 Voir les cartes des rôles</summary><div class="cardgrid" id="lgCards" style="margin-top:12px"></div></details>
         <div id="lgRoleList"></div>
         <div class="setting" id="lgVoiceRow"><div><b>Voix du narrateur</b><small>Le tel lit le texte à voix haute</small></div><button type="button" class="toggle" id="lgVoice" aria-pressed="true" aria-label="Voix du narrateur"></button></div>
         <div class="setting" id="lgVoicePick" style="flex-wrap:wrap"><div style="flex:1 1 100%"><b>Voix</b><small>Le narrateur IA est enregistré dans l'appli. Les voix du téléphone sonnent plus robot.</small></div><select id="lgVoiceSel" aria-label="Choix de la voix"></select><button type="button" class="btn alt" id="lgVoiceTest" style="padding:10px 14px;font-size:14px">Tester</button></div>
@@ -1064,12 +1093,12 @@ function passStep(){
   const it=passQ.items[passQ.i];
   $("rName").textContent=pn(it.name);$("rName").closest(".card").style.setProperty("--shadow",prof(it.name).c);
   $("prog").innerHTML=passQ.items.map((_,i)=>`<i class="${i<passQ.i?"done":i===passQ.i?"now":""}"></i>`).join("");
-  const s=$("secret");s.className="secret";s.innerHTML="<span>Appuie pour voir ton secret</span><small>Personne d'autre ne regarde, hein</small>";
+  const s=$("secret");s.className="secret";s.classList.remove("hascard");s.innerHTML="<span>Appuie pour voir ton secret</span><small>Personne d'autre ne regarde, hein</small>";
   s.disabled=false;$("nextP").hidden=true;
 }
 $("secret").onclick=()=>{
   const it=passQ.items[passQ.i];const s=$("secret");s.className="secret open pop";s.disabled=true;
-  s.innerHTML="";s.append(el("small",null,it.kicker),el("div","word",it.word),el("small",null,it.note));
+  s.innerHTML="";if(it.card&&LG_CARD[it.card])showCardIn(s,it.card);else s.append(el("small",null,it.kicker),el("div","word",it.word),el("small",null,it.note));
   $("nextP").hidden=false;$("nextP").textContent=passQ.i===passQ.items.length-1?"J'ai capté, on commence":"J'ai capté, je cache";
 };
 $("nextP").onclick=()=>{passQ.i++;if(passQ.i<passQ.items.length)passStep();else passQ.onDone()};
@@ -1300,6 +1329,7 @@ const lgOnRoles=()=>[...document.querySelectorAll("#lgRoleList [data-role]")].fi
 const lgNoMj=v=>v==="__out"||v==="__auto";
 function lgPlayersCount(){return names.length-(lgNoMj($("lgMj").value)?0:1)}
 function renderLgSetup(){
+  $("lgCardBox").addEventListener("toggle",renderCardGrid,{once:true});
   pickVoice();
   const sel=$("lgMj"),prev=sel.value||store.get("lg_mj","__auto");sel.innerHTML="";
   sel.appendChild(new Option("Personne : le tel fait le narrateur, tout le monde joue","__auto"));
@@ -1343,7 +1373,7 @@ function lgStart(){
   $("lgRolesBox").hidden=auto;
   const first=auto?{say:"Posez le téléphone au milieu de la table, écran vers le haut, volume à fond. Chaque rôle touchera l'écran à son réveil, les yeux des autres fermés.",btns:[["On commence",lgNight]]}
     :{say:`Donnez le téléphone à ${mj==="__out"?"le narrateur":mj}.`,btns:[["Je suis le narrateur, on commence",lgNight]]};
-  passPhone(lg.players.map(p=>({name:p.name,kicker:"Ton rôle",word:LG_ROLES[p.role][0],note:LG_ROLES[p.role][1]})),
+  passPhone(lg.players.map(p=>({name:p.name,kicker:"Ton rôle",word:LG_ROLES[p.role][0],note:LG_ROLES[p.role][1],card:p.role})),
     ()=>{show("lg-mj");lgRender(Object.assign({phase:"Avant la nuit",mute:!auto},first))});
 }
 $("lgStart").onclick=lgStart;
@@ -1746,6 +1776,22 @@ $("jnStart").onclick=()=>{jn={n:0,d:deck(JN[jnMode()].concat(custom.jn,custom.jn
 function jnNext(){jn.n++;const jc=$("jnTxt").closest(".card");jc.classList.remove("drop");void jc.offsetWidth;jc.classList.add("drop");$("jnCount").textContent="Carte "+jn.n;const t=$("jnTxt");t.textContent=jn.d();t.classList.remove("pop");void t.offsetWidth;t.classList.add("pop")}
 $("jnNext").onclick=jnNext;
 
+
+/* ===== cartes de rôle ===== */
+const LG_CARD={loup:["🐺","wolf"],infect:["🦠","wolf"],loupblanc:["🐺","solo white"],villageois:["🧑‍🌾","village"],voyante:["🔮","village"],sorciere:["🧪","village"],
+  chasseur:["🏹","village"],cupidon:["💘","village"],salvateur:["🛡️","village"],petitefille:["👧","village"],ancien:["👴","village"],idiot:["🤪","village"],
+  corbeau:["🐦‍⬛","village"],renard:["🦊","village"],enfant:["🌿","village"],ange:["😇","solo"],flute:["🪈","solo"],bouc:["🐐","village"]};
+const TEAM_LBL={village:"Village",wolf:"Loups-garous",solo:"Solitaire"};
+function roleCard(key,flip){
+  const [em,cls]=LG_CARD[key]||["❔","village"];const r=LG_ROLES[key]||[key,""];
+  const c=el("div","rcard "+cls+(flip?" flipin":""));const i=el("div","in");
+  ["a","b","c","d"].forEach(k=>i.appendChild(el("span","cn "+k,"✦")));
+  const team=cls.split(" ")[0];
+  i.append(el("div","tm",TEAM_LBL[team]),(()=>{const o=el("div","orb");o.appendChild(el("span","em",em));return o})(),el("div","nm",r[0]),el("div","rule"),el("div","pw",r[1]));
+  c.appendChild(i);return c;
+}
+function showCardIn(container,key){container.classList.add("hascard");container.innerHTML="";container.appendChild(roleCard(key,true))}
+function renderCardGrid(){const g=$("lgCards");if(!g||g.childElementCount)return;Object.keys(LG_ROLES).forEach(k=>g.appendChild(roleCard(k)))}
 /* ================= PROFILS ================= */
 const EMOJIS=["😎","🤠","👽","🤡","👻","💀","🦊","🐸","🐼","🦄","🐙","🦖","🍕","🌮","🍟","🔥","⚡","💎","👑","🎸","🎮","🏀","⚽","🍀","🌈","🌚","🥶","🤑","😈","🫠","🗿","🧃"];
 const PCOLORS=["#FF3D8B","#3D7BFF","#2FD39A","#8B5CF6","#FF8A3D","#FFE14D","#00C2D1","#E5484D","#A3E635","#F472B6"];
@@ -2055,7 +2101,7 @@ passPhone=function(items,onDone){
   items.forEach(it=>{const id=remoteIdFor(it.name);(id&&host.players[id].online?remote:local).push(Object.assign({},it,{id}))});
   if(!remote.length)return _passPhone(items,onDone);
   host.sent={};host.acks={};
-  remote.forEach(it=>{host.sent[it.id]={name:it.name,kicker:it.kicker,word:it.word,note:it.note,game,ts:Date.now()};sendTo(it.id)});
+  remote.forEach(it=>{host.sent[it.id]={name:it.name,kicker:it.kicker,word:it.word,note:it.note,card:it.card||null,game,ts:Date.now()};sendTo(it.id)});
   const toRemote=()=>{remoteDone=onDone;show("remote");setTheme(game);remoteRender()};
   if(local.length)_passPhone(local,toRemote);else toRemote();
 };
@@ -2076,7 +2122,7 @@ function showMySecret(cover){
   if(cover){s.className="secret";s.disabled=false;s.innerHTML="";s.append(el("span",null,"Nouveau rôle ! Touche pour le voir"),el("small",null,"Cache bien ton écran"));$("mySeen").hidden=true}
 }
 $("mySecret").onclick=()=>{if(!mySecret)return;const s=$("mySecret");s.className="secret open";s.disabled=true;s.innerHTML="";
-  s.append(el("small",null,mySecret.kicker),el("div","word",mySecret.word),el("small",null,mySecret.note));$("mySeen").hidden=false;try{navigator.vibrate?.(80)}catch(e){}};
+  if(mySecret.card&&LG_CARD[mySecret.card])showCardIn(s,mySecret.card);else s.append(el("small",null,mySecret.kicker),el("div","word",mySecret.word),el("small",null,mySecret.note));$("mySeen").hidden=false;try{navigator.vibrate?.(80)}catch(e){}};
 $("mySeen").onclick=()=>{if(guest&&mySecret&&!mySecret.acked){guest.ch.send({type:"broadcast",event:"ack",payload:{id:myId}});mySecret.acked=true}
   $("mySecret").hidden=true;$("mySeen").hidden=true;$("myAgain").hidden=false;$("joinHint").hidden=false;$("joinHint").textContent="C'est noté. Garde ce téléphone sous la main : les votes et les actions arriveront ici."};
 $("myAgain").onclick=()=>{showMySecret(true);$("mySecret").click()};
