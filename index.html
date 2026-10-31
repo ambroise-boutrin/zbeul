@@ -445,6 +445,13 @@ body[data-game=bt] .btn{border-radius:999px}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#2FD39A;margin-right:6px}
 .dot.off{background:#B0103F}
 #multiLink{font-size:13px}
+.askbox{display:flex;flex-direction:column;gap:10px;border:3px solid var(--ink);border-radius:16px;padding:14px;background:var(--paper)}
+.askbox .chips .chip.on,.askbox .btn.on{outline:4px solid var(--mint);outline-offset:2px}
+.askbox .chips{grid-template-columns:repeat(2,minmax(0,1fr))}
+.askbox #askOpts:has(.btn){display:flex;flex-direction:column;gap:10px}
+.buzz{grid-column:1/-1;aspect-ratio:1;max-width:260px;width:100%;margin:0 auto;border-radius:50%;border:6px solid var(--ink);background:radial-gradient(circle at 35% 30%,#FF8FB8,#FF1F5A 60%,#B0103F);color:#fff;font-family:var(--display);font-size:44px;box-shadow:0 10px 0 var(--ink);cursor:pointer}
+.buzz:active{transform:translateY(8px);box-shadow:0 2px 0 var(--ink)}
+.buzz:disabled{filter:grayscale(.6);opacity:.7}
 </style>
 
 <div id="fx" aria-hidden="true"></div>
@@ -556,6 +563,7 @@ body[data-game=bt] .btn{border-radius:999px}
         <h2 id="starter">—</h2>
       </div>
       <p class="hint">Chacun dit un mot, puis vous votez. Appuie sur le joueur éliminé.</p>
+      <button class="btn blue" type="button" id="ucVote" hidden>🗳️ Voter sur les téléphones</button>
       <div id="chips" class="chips"></div>
       <div id="confirm" class="card" style="box-shadow:4px 4px 0 var(--pink)" hidden>
         <h2 id="confirmTxt">—</h2>
@@ -773,6 +781,7 @@ body[data-game=bt] .btn{border-radius:999px}
       <div class="label" id="jnCount">Carte 1</div>
       <p class="cardtxt pop" id="jnTxt">—</p>
       <p class="hint">Ceux qui l'ont fait : une gorgée (ou main levée).</p>
+      <div id="jnAnswers" hidden style="display:flex;flex-direction:column;gap:4px;text-align:left"></div>
     </div>
     <button class="btn" type="button" id="jnNext">Carte suivante</button>
   </section>
@@ -902,10 +911,28 @@ body[data-game=bt] .btn{border-radius:999px}
       <div class="label" id="joinStatus">Connecté</div>
       <h2 id="joinHello">—</h2>
       <p class="hint" id="joinHint">Attends que l'hôte lance un jeu. Ton rôle s'affichera ici.</p>
+      <div id="myAsk" class="askbox" hidden>
+        <div class="label" id="askTitle"></div>
+        <p class="cardtxt" id="askText"></p>
+        <div class="big" id="askBig" hidden></div>
+        <p class="hint" id="askNote" hidden></p>
+        <div id="askOpts" class="chips"></div>
+        <p id="askDone" class="hint" hidden>Réponse envoyée ✓ Tu peux encore changer d'avis.</p>
+      </div>
       <button id="mySecret" class="secret" type="button" hidden></button>
       <button class="btn" type="button" id="mySeen" hidden>J'ai vu, je cache</button>
       <button class="ghost" type="button" id="myAgain" hidden>Revoir mon rôle</button>
       <button class="ghost" type="button" id="joinLeave">Quitter la partie</button>
+    </div>
+  </section>
+
+  <section id="vote" class="scr" hidden>
+    <div class="card">
+      <div class="label">Vote sur les téléphones</div>
+      <h2>Qui on élimine ?</h2>
+      <p class="hint" id="voteStatus"></p>
+      <div class="list" id="voteList"></div>
+      <div class="row"><button class="btn" type="button" id="voteClose">Clore le vote</button><button class="btn alt" type="button" id="voteCancel">Annuler</button></div>
     </div>
   </section>
 
@@ -1981,12 +2008,13 @@ function multiCreate(){
     const st=ch.presenceState();const seen={};
     Object.values(st).flat().forEach(m=>{if(m.role!=="player")return;seen[m.id]=1;
       const was=host.players[m.id];host.players[m.id]={name:m.name,e:m.e,c:m.c,online:true};
-      if(was&&!was.online||!was){if(host.sent[m.id]&&!host.acks[m.id])sendTo(m.id)}});
+      if(was&&!was.online||!was){if(host.sent[m.id]&&!host.acks[m.id])sendTo(m.id);resendAsks(m.id)}});
     Object.keys(host.players).forEach(id=>{if(!seen[id])host.players[id].online=false});
     multiRender();remoteRender();
   });
   ch.on("broadcast",{event:"ack"},({payload})=>{host.acks[payload.id]=true;remoteRender()});
-  ch.on("broadcast",{event:"hello"},({payload})=>{if(host.sent[payload.id]&&!host.acks[payload.id])sendTo(payload.id)});
+  ch.on("broadcast",{event:"answer"},({payload})=>{const a=host.asks&&host.asks[payload.qid];if(!a||!a.ids.includes(payload.id))return;a.answered[payload.id]=payload.v;try{a.onAnswer(payload.id,payload.v)}catch(e){console.error(e)}});
+  ch.on("broadcast",{event:"hello"},({payload})=>{if(host.sent[payload.id]&&!host.acks[payload.id])sendTo(payload.id);resendAsks(payload.id)});
   ch.subscribe(st=>{if(st==="SUBSCRIBED")ch.track({role:"host",id:myId})});
   try{$("multiHost").value=store.get("zb_host_name",names[0]||"")}catch(e){}
   drawQr(roomLink(code));multiRender();
@@ -2050,7 +2078,7 @@ function showMySecret(cover){
 $("mySecret").onclick=()=>{if(!mySecret)return;const s=$("mySecret");s.className="secret open";s.disabled=true;s.innerHTML="";
   s.append(el("small",null,mySecret.kicker),el("div","word",mySecret.word),el("small",null,mySecret.note));$("mySeen").hidden=false;try{navigator.vibrate?.(80)}catch(e){}};
 $("mySeen").onclick=()=>{if(guest&&mySecret&&!mySecret.acked){guest.ch.send({type:"broadcast",event:"ack",payload:{id:myId}});mySecret.acked=true}
-  $("mySecret").hidden=true;$("mySeen").hidden=true;$("myAgain").hidden=false;$("joinHint").hidden=false;$("joinHint").textContent="C'est noté. Le jeu se passe maintenant sur le téléphone de l'hôte."};
+  $("mySecret").hidden=true;$("mySeen").hidden=true;$("myAgain").hidden=false;$("joinHint").hidden=false;$("joinHint").textContent="C'est noté. Garde ce téléphone sous la main : les votes et les actions arriveront ici."};
 $("myAgain").onclick=()=>{showMySecret(true);$("mySecret").click()};
 function joinGo(){
   const name=$("joinName").value.trim();const err=$("joinErr");
@@ -2063,6 +2091,9 @@ function joinGo(){
   ch.on("broadcast",{event:"secret"},({payload})=>{if(payload.to!==myId)return;
     if(mySecret&&mySecret.ts===payload.ts){if(mySecret.acked)ch.send({type:"broadcast",event:"ack",payload:{id:myId}});return}
     mySecret=Object.assign({},payload);if(payload.game&&THEMES[payload.game])setTheme(payload.game);joinRender();showMySecret(true);try{navigator.vibrate?.([60,60,60])}catch(e){}});
+  ch.on("broadcast",{event:"ask"},({payload})=>{if(!payload.to.includes(myId))return;if(myAsk&&myAsk.qid===payload.qid)return;
+    myAsk=Object.assign({},payload);if(payload.game&&THEMES[payload.game])setTheme(payload.game);$("joinHint").hidden=true;renderMyAsk();if(!payload.quiet){try{navigator.vibrate?.(60)}catch(e){}}});
+  ch.on("broadcast",{event:"clear"},({payload})=>{if(myAsk&&myAsk.qid===payload.qid){myAsk=null;renderMyAsk();if(!mySecret||mySecret.acked)$("joinHint").hidden=false}});
   ch.on("broadcast",{event:"closed"},()=>{$("joinStatus").textContent="L'hôte a fermé la partie";});
   ch.on("presence",{event:"sync"},()=>{const hostOn=Object.values(ch.presenceState()).flat().some(m=>m.role==="host");$("joinStatus").textContent=hostOn?`Connecté à la partie ${code}`:`Partie ${code} · en attente de l'hôte…`});
   ch.subscribe(st=>{if(st==="SUBSCRIBED"){ch.track({role:"player",id:myId,name,e:p.e,c:p.c});ch.send({type:"broadcast",event:"hello",payload:{id:myId}});guest.ok=true;joinRender();lockScreen&&lockScreen()}
@@ -2081,6 +2112,157 @@ function alertBox(t){const e=$("homeErr");e.textContent=t;e.hidden=false}
   const n=store.get("zb_guest_name","");$("joinName").value=n;const p=prof(n||"moi");$("joinAv").textContent=p.e;$("joinAv").style.setProperty("--pc",p.c);
   setTimeout(()=>{show("join");document.getElementById("intro").hidden=true},0);
 })();
+/* ================= MULTI : questions envoyées aux téléphones ================= */
+let qseq=0;
+function remoteAsk(ids,spec,onAnswer){
+  if(!host||!ids.length)return null;
+  const qid="q"+(++qseq)+"_"+Date.now().toString(36);
+  host.asks=host.asks||{};host.asks[qid]={ids,spec,onAnswer,answered:{}};
+  host.ch.send({type:"broadcast",event:"ask",payload:Object.assign({qid,to:ids,game:document.body.dataset.game},spec)});
+  return qid;
+}
+function remoteClear(qid){if(!host||!qid||!host.asks||!host.asks[qid])return;delete host.asks[qid];host.ch.send({type:"broadcast",event:"clear",payload:{qid}})}
+function remoteClearAll(){if(!host||!host.asks)return;Object.keys(host.asks).forEach(remoteClear)}
+function resendAsks(id){if(!host||!host.asks)return;Object.entries(host.asks).forEach(([qid,a])=>{if(a.ids.includes(id)&&!a.answered[id])host.ch.send({type:"broadcast",event:"ask",payload:Object.assign({qid,to:a.ids,game:document.body.dataset.game},a.spec)})})}
+function onlineIds(list){return list.map(p=>remoteIdFor(p.name||p)).filter(id=>id&&host.players[id]&&host.players[id].online)}
+const phoneNote="📱 Réponse attendue sur un téléphone. Vous pouvez aussi toucher ici.";
+
+/* ---- Loup-garou : actions de nuit sur le téléphone du rôle ---- */
+const LG_ACTORS=[[/^Loups-garous, réveillez/,"wolves"],[/^Voyante|à la voyante/,"voyante"],[/^Renard|^Oui : il y a|^Non : aucun loup/,"renard"],[/^Salvateur/,"salvateur"],[/^Cupidon/,"cupidon"],[/^Enfant sauvage/,"enfant"],[/^Joueur de flûte/,"flute"],[/^Loup blanc/,"loupblanc"],[/^Corbeau/,"corbeau"],[/^Infect/,"infect"],[/^Sorcière/,"sorciere"]];
+let lgQ=null;
+const _lgRender=lgRender;
+lgRender=function(o){
+  if(lgQ){remoteClear(lgQ);lgQ=null}
+  _lgRender(o);
+  if(!host||!lg)return;
+  const t=lg.tok,say=o.say||"";
+  if(!o.pick&&!(o.btns||[]).length)return;
+  if(/rendors-toi|rendormez-vous|^La nuit tombe|^Le soleil se lève|^Posez le téléphone|^Donnez le téléphone/.test(say)&&!o.pick)return;
+  let actors=null;
+  const hm=/^(.+) était le chasseur/.exec(say);
+  if(hm){actors=lg.players.filter(p=>p.name===hm[1])}
+  else{const a=LG_ACTORS.find(([re])=>re.test(say));if(!a)return;
+    actors=a[1]==="wolves"?lgAlive().filter(p=>p.wolf):lgAlive().filter(p=>p.role===a[1])}
+  const ids=onlineIds(actors);if(!ids.length)return;
+  const opts=[];(o.pick||[]).forEach(p=>opts.push({v:"p:"+p.name,label:p.name}));(o.btns||[]).forEach(([tx],i)=>opts.push({v:"b:"+i,label:tx}));
+  const text=/^Montre ce rôle/.test(say)?"Voici son rôle :":say;
+  lgQ=remoteAsk(ids,{title:$("lgPhase").textContent,text,big:o.big||"",note:o.note||"",options:opts,quiet:true},(id,v)=>{
+    if(lg.tok!==t)return;
+    if(v.startsWith("p:")){const p=(o.pick||[]).find(x=>x.name===v.slice(2));if(p)o.onPick(p)}
+    else{const b=(o.btns||[])[+v.slice(2)];if(b)b[1]()}
+  });
+  if(lgQ){$("lgNote").hidden=false;$("lgNote").textContent=(o.note&&!lg.auto?o.note+" · ":"")+phoneNote}
+};
+
+/* ---- vote sur les téléphones (Loup-garou, Undercover) ---- */
+let voteQ=null,voteCtx=null;
+function phoneVote({candidates,voters,bonus,back,onResult}){
+  const ids=onlineIds(voters);
+  voteCtx={candidates,tally:Object.fromEntries(candidates.map(p=>[p.name,(bonus&&bonus[p.name])||0])),who:{},ids,back,onResult,voters};
+  voteQ=remoteAsk(ids,{title:"Vote",text:"Qui veux-tu éliminer ?",options:candidates.map(p=>({v:p.name,label:p.name})),excludeSelf:true},(id,v)=>{
+    if(voteCtx.who[id])voteCtx.tally[voteCtx.who[id]]--;voteCtx.who[id]=v;voteCtx.tally[v]=(voteCtx.tally[v]||0)+1;voteRender()});
+  const prevTheme=document.body.dataset.game;show("vote");setTheme(prevTheme);voteRender();
+}
+function voteRender(){
+  const c=voteCtx;if(!c)return;
+  const box=$("voteList");box.innerHTML="";
+  const max=Math.max(1,...Object.values(c.tally));
+  c.candidates.forEach(p=>{const r=el("div","gbar");r.append(el("span","rk",String(c.tally[p.name]||0)),el("span","nm",pn(p.name)));
+    const plus=el("button","ghost","+1");plus.type="button";plus.style.padding="4px 10px";plus.onclick=()=>{c.tally[p.name]++;voteRender()};r.appendChild(plus);
+    const tr=el("div","tr");const bar=el("i");bar.style.width=((c.tally[p.name]||0)/max*100)+"%";tr.appendChild(bar);r.appendChild(tr);box.appendChild(r)});
+  const n=Object.keys(c.who).length;
+  $("voteStatus").textContent=`${n} / ${c.ids.length} téléphones ont voté. Utilisez +1 pour ceux qui n'ont pas de téléphone connecté.`;
+  if(c.ids.length&&n>=c.ids.length&&!c.autoClosed){c.autoClosed=true;setTimeout(voteClose,700)}
+}
+function voteClose(){
+  const c=voteCtx;if(!c)return;remoteClear(voteQ);voteQ=null;voteCtx=null;
+  const arr=Object.entries(c.tally).sort((a,b)=>b[1]-a[1]);
+  const top=arr[0],tied=arr.filter(x=>x[1]===top[1]);
+  c.onResult(top[1]>0&&tied.length===1?c.candidates.find(p=>p.name===top[0]):null,tied.map(x=>x[0]),top[1]);
+}
+$("voteClose").onclick=voteClose;
+$("voteCancel").onclick=()=>{const c=voteCtx;remoteClear(voteQ);voteQ=null;voteCtx=null;if(c)c.back()};
+
+const _lgVote=lgVote;
+lgVote=function(){
+  _lgVote();
+  if(!host||!onlineIds(lgAlive()).length)return;
+  const b=el("button","btn blue","🗳️ Voter sur les téléphones");b.type="button";
+  const t=lg.tok;
+  b.onclick=()=>{if(lg.tok!==t)return;const bonus={};if(lg.crow&&lg.crow.alive)bonus[lg.crow.name]=2;
+    phoneVote({candidates:lgAlive(),voters:lgAlive().filter(p=>!p.revealed),bonus,back:()=>{show("lg-mj");lgVote()},
+      onResult:(p,tied,n)=>{show("lg-mj");
+        if(p)return lgRender({say:`Le village a voté contre ${p.name} (${n} voix). On l'élimine ?`,mute:true,btns:[["Oui, éliminer",()=>lgEliminate(p)],["Revoter",lgVote,"alt"]]});
+        lgRender({say:`Égalité entre ${tied.join(", ")}.`,mute:true,btns:(lg.inGame.includes("bouc")?[["Le bouc émissaire paie",lgTie,"violet"]]:[]).concat([["Revoter",lgVote],["Personne n'est éliminé",lgNextNight,"alt"]])})}})};
+  $("lgBtns").prepend(b);
+};
+
+/* Undercover */
+$("ucVote").onclick=()=>{
+  if(!host||!game)return;const alive=game.players.filter(p=>p.alive);
+  phoneVote({candidates:alive,voters:alive,back:()=>show("uc-play"),onResult:(p,tied,n)=>{show("uc-play");
+    if(p){game.pending=game.players.indexOf(p);$("confirmTxt").textContent=`${n} voix contre ${p.name}. On le sort ?`;$("confirm").hidden=false}
+    else{$("confirmTxt").textContent=`Égalité entre ${tied.join(", ")}. Revotez ou touchez un joueur.`;$("confirm").hidden=false;game.pending=null}}})};
+const _ucTurn=ucTurn;ucTurn=function(){_ucTurn();$("ucVote").hidden=!host||!onlineIds(game.players.filter(p=>p.alive)).length};
+const _yes=$("yes").onclick;$("yes").onclick=()=>{if(game.pending==null){$("confirm").hidden=true;return}_yes()};
+
+/* ---- Blind test : buzzer ---- */
+let btQ=null;
+const _btNext=btNext;
+btNext=function(){
+  if(btQ){remoteClear(btQ);btQ=null}
+  _btNext();
+  if(!host)return;
+  const hummer=bt.curMode==="hum"?names[bt.i%names.length]:null;
+  const ids=onlineIds(names.filter(n=>n!==hummer));if(!ids.length)return;
+  const round=bt.round;
+  btQ=remoteAsk(ids,{title:"Blind test",text:"Buzz dès que tu as trouvé !",kind:"buzz",options:[{v:"buzz",label:"BUZZ"}]},(id)=>{
+    if(bt.round!==round||bt.buzzed)return;bt.buzzed=host.players[id].name;
+    const ban=el("p","drink pop","🔔 "+bt.buzzed+" a buzzé en premier !");$("btHead").appendChild(ban);try{btAudio.pause()}catch(e){}
+    remoteClear(btQ);btQ=null;
+  });
+  bt.buzzed=null;
+};
+
+/* ---- Je n'ai jamais : réponses sur les téléphones ---- */
+let jnQ=null;
+const _jnNext=jnNext;
+jnNext=function(){
+  if(jnQ){remoteClear(jnQ);jnQ=null}
+  _jnNext();
+  if(!host)return;const ids=onlineIds(names);if(!ids.length)return;
+  const done=[],never=[];const box=$("jnAnswers");box.hidden=false;
+  const draw=()=>{box.innerHTML="";box.append(el("div","label",`Déjà fait (${done.length})`),el("p",null,done.join(", ")||"—"),el("div","label",`Jamais (${never.length})`),el("p",null,never.join(", ")||"—"))};draw();
+  jnQ=remoteAsk(ids,{title:"Je n'ai jamais",text:$("jnTxt").textContent,options:[{v:"y",label:"Je l'ai déjà fait 🍺"},{v:"n",label:"Jamais 😇"}]},(id,v)=>{
+    const n=host.players[id].name;[done,never].forEach(a=>{const i=a.indexOf(n);if(i>=0)a.splice(i,1)});(v==="y"?done:never).push(n);draw()});
+};
+
+/* ---- Action ou Vérité : la carte arrive sur le téléphone du joueur ---- */
+let avQ=null;
+const _avShow=avShow;
+avShow=function(kind){
+  _avShow(kind);if(!host)return;if(avQ){remoteClear(avQ);avQ=null}
+  const ids=onlineIds([names[av.i%names.length]]);if(!ids.length)return;
+  avQ=remoteAsk(ids,{title:kind==="a"?"Action":"Vérité",text:$("avTxt").textContent,options:[{v:"ok",label:"Fait ✓"},{v:"no",label:"Je refuse"}]},(id,v)=>{avQ=null;(v==="ok"?$("avDone"):$("avSkip")).click()});
+};
+const _avTurn=avTurn;avTurn=function(){if(avQ){remoteClear(avQ);avQ=null}_avTurn()};
+
+/* nettoyage en quittant un écran de jeu */
+const _show=show;
+show=function(id){if(host){if(id!=="bt-play"&&btQ){remoteClear(btQ);btQ=null}if(id==="home")remoteClearAll()}_show(id)};
+
+/* ---- côté joueur : afficher la question ---- */
+let myAsk=null;
+function renderMyAsk(){
+  const box=$("myAsk");if(!myAsk){box.hidden=true;return}
+  box.hidden=false;$("askTitle").textContent=myAsk.title||"";$("askText").textContent=myAsk.text||"";
+  $("askBig").hidden=!myAsk.big;$("askBig").textContent=myAsk.big||"";$("askNote").hidden=!myAsk.note;$("askNote").textContent=myAsk.note||"";
+  const o=$("askOpts");o.innerHTML="";$("askDone").hidden=!myAsk.sent;
+  if(myAsk.kind==="buzz"){const b=el("button","buzz","BUZZ");b.type="button";b.disabled=!!myAsk.sent;b.onclick=()=>answer("buzz",b);o.appendChild(b);return}
+  myAsk.options.forEach(op=>{if(myAsk.excludeSelf&&op.v===guest.name)return;const b=el("button",op.v.startsWith("b:")||myAsk.options.length<=2?"btn":"chip",op.label);b.type="button";
+    if(myAsk.sent===op.v)b.classList.add("on");b.onclick=()=>answer(op.v,b);o.appendChild(b)});
+}
+function answer(v){if(!guest||!myAsk)return;guest.ch.send({type:"broadcast",event:"answer",payload:{qid:myAsk.qid,id:myId,v}});myAsk.sent=v;try{navigator.vibrate?.(30)}catch(e){}renderMyAsk()}
 
 setTheme("home");renderPlayers();
 {const h=location.hash.slice(1);if(h&&document.getElementById(h)&&/-setup$/.test(h))show(h)}

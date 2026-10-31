@@ -7,7 +7,13 @@ Les jeux de soirée qui mettent le zbeul, sur un seul téléphone ou sur tous le
 **Autour :** profils joueurs, classement et titres de la soirée, historique, mode tournoi avec traître secret, cartes perso, mode gorgées.
 
 ## Multi-téléphones
-L'hôte crée une partie sur l'accueil (code + QR code). Chacun rejoint avec `?room=CODE` et reçoit son rôle ou son mot sur son propre téléphone (Undercover, Loup-garou, traître du tournoi). Temps réel via Supabase Realtime (canaux `zbeul:CODE`, broadcast + presence, aucune table).
+L'hôte crée une partie sur l'accueil (code + QR code). Chacun rejoint avec `?room=CODE` sur son propre téléphone :
+- **Rôles et mots** envoyés en privé (Undercover, Loup-garou, traître du tournoi).
+- **Loup-garou** : chaque rôle agit la nuit sur son téléphone (voyante, loups, sorcière, salvateur, cupidon…), vote du village sur les téléphones.
+- **Undercover** : vote sur les téléphones.
+- **Blind test** : buzzer sur chaque téléphone.
+- **Je n'ai jamais** : chacun répond « déjà fait » / « jamais », l'hôte voit qui.
+- **Action ou Vérité** : la carte arrive sur le téléphone du joueur concerné. Temps réel via Supabase Realtime (canaux `zbeul:CODE`, broadcast + presence, aucune table).
 
 ## Stack
 Site 100 % statique, aucun build : `index.html`, `voice.js` (répliques du narrateur), `sw.js` (hors ligne), `manifest.webmanifest`, `lib/` (supabase-js 2.45.4, qrcode-generator 1.4.4), `fonts/`, `icons/`.

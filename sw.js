@@ -1,4 +1,4 @@
-const VERSION="zbeul-v6";
+const VERSION="zbeul-v7";
 const CORE=["./","index.html","voice.js","lib/supabase.js","lib/qrcode.js","manifest.webmanifest",
  "fonts/dela.woff2","fonts/archivo.woff2","fonts/specialelite.woff2","fonts/cinzel.woff2","fonts/bungee.woff2","fonts/righteous.woff2","fonts/alfaslab.woff2",
  "icons/icon-192.png","icons/icon-512.png","icons/maskable-512.png","icons/apple-touch-icon.png","icons/favicon-32.png"];
