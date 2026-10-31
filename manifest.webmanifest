@@ -1,0 +1,52 @@
+{
+  "name": "ZBEUL",
+  "short_name": "ZBEUL",
+  "description": "Les jeux de soirée qui mettent le zbeul : Undercover, Loup-garou, Dans ta tête, Action ou Vérité, Je n'ai jamais, Blind test.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFE14D",
+  "theme_color": "#FFE14D",
+  "categories": [
+    "games",
+    "entertainment"
+  ],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Loup-garou",
+      "url": "./#lg-setup"
+    },
+    {
+      "name": "Blind test",
+      "url": "./#bt-setup"
+    },
+    {
+      "name": "Undercover",
+      "url": "./#uc-setup"
+    },
+    {
+      "name": "Action ou Vérité",
+      "url": "./#av-setup"
+    }
+  ]
+}
