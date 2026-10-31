@@ -484,13 +484,22 @@ body[data-game=bt] .btn{border-radius:999px}
 .pickgrid .tile{min-height:92px;transform:none!important;animation:none!important}
 .pickgrid .tile .t{font-size:18px}
 .pickgrid .tile::after{display:none}.pickgrid .tile[data-g=jn],.pickgrid .tile[data-g=lg]{background-image:none}
+#scanner{position:fixed;inset:0;z-index:70;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:calc(20px + env(safe-area-inset-top,0px)) 16px calc(20px + env(safe-area-inset-bottom,0px));color:#fff;text-align:center}
+#scanner[hidden]{display:none}
+#scanner video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.9}
+#scanner .scanframe{position:relative;width:min(70vw,280px);aspect-ratio:1;border:4px solid #FFE14D;border-radius:24px;box-shadow:0 0 0 100vmax rgba(0,0,0,.45)}
+#scanner p,#scanner .btn{position:relative}
+header{justify-content:flex-start}
+header .tag{margin-left:auto}
+.logoimg{width:58px;height:58px;border-radius:16px;border:3px solid var(--ink);box-shadow:3px 3px 0 var(--pink);transform:rotate(-4deg);flex:none}
+body:not([data-game=home]) .logoimg{display:none}
 </style>
 
 <div id="fx" aria-hidden="true"></div>
 <div id="intro" hidden aria-hidden="true"><div class="in-t"></div><div class="in-s"></div></div>
 <div class="wrap">
   <header>
-    <button class="logo" id="logo" type="button" aria-label="Retour au menu"><b id="l1" style="font-weight:400">ZBEUL</b><br><span id="l2"></span></button>
+    <img class="logoimg" src="icons/logo-256.png" alt="" width="58" height="58"><button class="logo" id="logo" type="button" aria-label="Retour au menu"><b id="l1" style="font-weight:400">ZBEUL</b><br><span id="l2"></span></button>
     <div class="tag" id="tag">jeux de soirée</div>
   </header>
 
@@ -519,7 +528,11 @@ body[data-game=bt] .btn{border-radius:999px}
     </div>
     <div class="card" id="multiCard">
       <div class="row" style="justify-content:space-between;align-items:center"><div><div class="label">Multi-téléphones</div><h2 style="font-size:19px">Chacun reçoit son rôle sur son tel</h2></div></div>
-      <div id="multiOff"><p class="hint">Crée une partie : tes potes scannent le QR code et rejoignent. Undercover, Loup-garou et le traître du tournoi envoient les rôles directement sur leurs téléphones.</p><button class="btn blue" type="button" id="multiCreate" style="width:100%;margin-top:10px">Créer une partie</button></div>
+      <div id="multiOff"><p class="hint">Crée une partie : tes potes scannent le QR code et rejoignent. Undercover, Loup-garou et le traître du tournoi envoient les rôles directement sur leurs téléphones.</p><button class="btn blue" type="button" id="multiCreate" style="width:100%;margin-top:10px">Créer une partie</button>
+        <div class="label" style="margin-top:16px">Rejoindre une partie</div>
+        <div class="row" style="flex-wrap:nowrap;margin-top:6px"><input type="text" id="joinCodeIn" maxlength="4" placeholder="CODE" autocomplete="off" autocapitalize="characters" aria-label="Code de la partie" style="text-transform:uppercase;letter-spacing:.2em;font-family:var(--display);font-size:22px;text-align:center"><button class="btn mint" type="button" id="joinCodeGo">Rejoindre</button></div>
+        <button class="ghost" type="button" id="scanBtn" style="width:100%;margin-top:10px">📷 Scanner le QR code</button>
+        <p id="joinCodeErr" class="err" hidden></p></div>
       <div id="multiOn" hidden style="display:flex;flex-direction:column;gap:12px">
         <div class="mroom"><div id="multiQr" class="qr" aria-label="QR code pour rejoindre"></div><div><div class="label">Code</div><div class="mcode" id="multiCode">—</div><button class="ghost" type="button" id="multiCopy" style="font-size:13px;padding:6px 10px">Copier le lien</button></div></div>
         <input type="text" id="multiLink" readonly aria-label="Lien de la partie">
@@ -937,6 +950,7 @@ body[data-game=bt] .btn{border-radius:999px}
       <div id="trBtns" class="list"></div>
     </div>
   </section>
+  <div id="scanner" hidden><video id="scanVideo" muted playsinline></video><div class="scanframe"></div><p>Vise le QR code affiché sur le tel de l'hôte</p><button class="btn alt" type="button" id="scanClose">Annuler</button></div>
   <!-- MULTI : joueur -->
   <section id="join" class="scr" hidden>
     <div class="card" id="joinForm">
@@ -1784,7 +1798,7 @@ const jnMode=bindSeg($("jnMode"),"jn_mode","m");
 let jn=null;
 $("jnStart").onclick=()=>{jn={n:0,d:deck(JN[jnMode()].concat(custom.jn,custom.jn))};jnNext();show("jn-play")};
 function jnNext(){jn.n++;const jc=$("jnTxt").closest(".card");jc.classList.remove("drop");void jc.offsetWidth;jc.classList.add("drop");$("jnCount").textContent="Carte "+jn.n;const t=$("jnTxt");t.textContent=jn.d();t.classList.remove("pop");void t.offsetWidth;t.classList.add("pop")}
-$("jnNext").onclick=jnNext;
+$("jnNext").onclick=()=>jnNext();
 
 
 /* ===== cartes de rôle ===== */
@@ -2081,7 +2095,7 @@ function multiCreate(){
   try{$("multiHost").value=store.get("zb_host_name",names[0]||"")}catch(e){}
   drawQr(roomLink(code));multiRender();
 }
-function multiClose(){$("multiPick").hidden=true;if(host){try{host.ch.send({type:"broadcast",event:"closed",payload:{}});sb.removeChannel(host.ch)}catch(e){}}host=null;multiRender()}
+function multiClose(){$("multiPick").hidden=true;if(host){const ch=host.ch;try{ch.send({type:"broadcast",event:"closed",payload:{}});setTimeout(()=>{try{sb.removeChannel(ch)}catch(e){}},1500)}catch(e){}}host=null;multiRender()}
 $("multiCreate").onclick=multiCreate;
 $("multiClose").onclick=multiClose;
 $("multiCopy").onclick=()=>{const t=$("multiLink").value;(navigator.clipboard?.writeText(t)||Promise.reject()).then(()=>{$("multiCopy").textContent="Lien copié"},()=>{$("multiLink").select()})};
@@ -2159,8 +2173,8 @@ function joinGo(){
     myAsk=Object.assign({},payload);if(payload.game&&THEMES[payload.game])setTheme(payload.game);$("joinHint").hidden=true;renderMyAsk();if(!payload.quiet){try{navigator.vibrate?.(60)}catch(e){}}});
   ch.on("broadcast",{event:"clear"},({payload})=>{if(myAsk&&myAsk.qid===payload.qid){myAsk=null;renderMyAsk();if(!mySecret||mySecret.acked)$("joinHint").hidden=false}});
   ch.on("broadcast",{event:"lobby"},({payload})=>{if(!myAsk){$("joinHint").hidden=false;$("joinHint").textContent=payload.text}});
-  ch.on("broadcast",{event:"closed"},()=>{$("joinStatus").textContent="L'hôte a fermé la partie";});
-  ch.on("presence",{event:"sync"},()=>{const hostOn=Object.values(ch.presenceState()).flat().some(m=>m.role==="host");$("joinStatus").textContent=hostOn?`Connecté à la partie ${code}`:`Partie ${code} · en attente de l'hôte…`});
+  ch.on("broadcast",{event:"closed"},()=>{guest.closed=true;$("joinStatus").textContent="L'hôte a fermé la partie";$("joinHint").hidden=false;$("joinHint").textContent="Tu peux quitter la partie, ou attendre qu'il en recrée une.";myAsk=null;renderMyAsk()});
+  ch.on("presence",{event:"sync"},()=>{if(guest.closed)return;const hostOn=Object.values(ch.presenceState()).flat().some(m=>m.role==="host");$("joinStatus").textContent=hostOn?`Connecté à la partie ${code}`:`Partie ${code} · en attente de l'hôte…`});
   ch.subscribe(st=>{if(st==="SUBSCRIBED"){ch.track({role:"player",id:myId,name,e:p.e,c:p.c});ch.send({type:"broadcast",event:"hello",payload:{id:myId}});guest.ok=true;joinRender();lockScreen&&lockScreen()}
     else if(st==="CHANNEL_ERROR"||st==="TIMED_OUT"){$("joinStatus").textContent="Connexion perdue, reconnexion…"}});
 }
@@ -2168,15 +2182,50 @@ $("joinGo").onclick=joinGo;
 $("joinName").addEventListener("keydown",e=>{if(e.key==="Enter")joinGo()});
 $("joinAv").onclick=()=>{const n=$("joinName").value.trim()||"moi";const p=prof(n);p.e=EMOJIS[(EMOJIS.indexOf(p.e)+1)%EMOJIS.length];store.set("profiles",profiles);$("joinAv").textContent=p.e};
 $("joinName").addEventListener("input",()=>{const p=prof($("joinName").value.trim()||"moi");$("joinAv").textContent=p.e;$("joinAv").style.setProperty("--pc",p.c)});
-$("joinLeave").onclick=()=>{try{sb.removeChannel(guest.ch)}catch(e){}guest=null;mySecret=null;window.history.replaceState(null,"",location.pathname);show("home")};
+$("joinLeave").onclick=()=>{try{sessionStorage.removeItem("zb_room")}catch(e){}try{sb.removeChannel(guest.ch)}catch(e){}guest=null;mySecret=null;window.history.replaceState(null,"",location.pathname);show("home")};
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&guest&&guest.ok){try{guest.ch.send({type:"broadcast",event:"hello",payload:{id:myId}})}catch(e){}}});
 function alertBox(t){const e=$("homeErr");e.textContent=t;e.hidden=false}
-(function bootJoin(){
-  const m=/[?&]room=([A-Za-z]{4})/.exec(location.search);if(!m)return;
-  guest={code:m[1].toUpperCase(),ok:false};$("joinCode").textContent=guest.code;
+function startJoin(code){
+  code=String(code||"").toUpperCase().replace(/[^A-Z]/g,"").slice(0,4);if(code.length!==4)return false;
+  if(guest&&guest.ch){try{sb.removeChannel(guest.ch)}catch(e){}}
+  guest={code,ok:false};mySecret=null;myAsk=null;$("joinCode").textContent=code;
   const n=store.get("zb_guest_name","");$("joinName").value=n;const p=prof(n||"moi");$("joinAv").textContent=p.e;$("joinAv").style.setProperty("--pc",p.c);
-  setTimeout(()=>{show("join");document.getElementById("intro").hidden=true},0);
-})();
+  joinRender();show("join");document.getElementById("intro").hidden=true;
+  try{window.history.replaceState(null,"","?room="+code);sessionStorage.setItem("zb_room",code)}catch(e){}
+  if(n)setTimeout(joinGo,50);
+  return true;
+}
+(function bootJoin(){const m=/[?&]room=([A-Za-z]{4})/.exec(location.search);let c=m&&m[1];if(!c){try{c=sessionStorage.getItem("zb_room")}catch(e){}}if(c)setTimeout(()=>startJoin(c),0)})();
+$("joinCodeGo").onclick=()=>{const v=$("joinCodeIn").value;if(!startJoin(v)){$("joinCodeErr").textContent="Le code fait 4 lettres, par exemple KRBZ.";$("joinCodeErr").hidden=false}};
+$("joinCodeIn").addEventListener("keydown",e=>{if(e.key==="Enter")$("joinCodeGo").click()});
+$("joinCodeIn").addEventListener("input",e=>{e.target.value=e.target.value.toUpperCase().replace(/[^A-Z]/g,"")});
+/* scanner de QR intégré */
+let scanStream=null,scanRaf=0;
+function loadJsQR(){return window.jsQR?Promise.resolve():new Promise((ok,ko)=>{const sc=document.createElement("script");sc.src="lib/jsqr.js";sc.onload=ok;sc.onerror=ko;document.head.appendChild(sc)})}
+function scanStop(){cancelAnimationFrame(scanRaf);if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null}$("scanner").hidden=true}
+function codeFromText(t){const m=/[?&]room=([A-Za-z]{4})/.exec(t)||/^([A-Za-z]{4})$/.exec(t.trim());return m?m[1]:null}
+async function scanStart(){
+  const err=$("joinCodeErr");err.hidden=true;
+  try{
+    scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false});
+  }catch(e){err.textContent="Impossible d'ouvrir la caméra. Autorise l'appareil photo, ou tape le code.";err.hidden=false;return}
+  $("scanner").hidden=false;const v=$("scanVideo");v.srcObject=scanStream;v.setAttribute("playsinline","");await v.play().catch(()=>{});
+  const det=("BarcodeDetector" in window)?new BarcodeDetector({formats:["qr_code"]}):null;
+  if(!det)await loadJsQR().catch(()=>{});
+  const cv=document.createElement("canvas"),cx=cv.getContext("2d",{willReadFrequently:true});
+  const tick=async()=>{
+    if(!scanStream)return;
+    if(v.readyState>=2){
+      let txt=null;
+      try{if(det){const r=await det.detect(v);if(r[0])txt=r[0].rawValue}
+        else if(window.jsQR){const w=v.videoWidth,h=v.videoHeight,sc=Math.min(1,640/w);cv.width=w*sc;cv.height=h*sc;cx.drawImage(v,0,0,cv.width,cv.height);const r=jsQR(cx.getImageData(0,0,cv.width,cv.height).data,cv.width,cv.height);if(r)txt=r.data}}catch(e){}
+      const code=txt&&codeFromText(txt);
+      if(code){try{navigator.vibrate?.(80)}catch(e){}scanStop();startJoin(code);return}
+    }
+    scanRaf=requestAnimationFrame(tick);
+  };tick();
+}
+$("scanBtn").onclick=scanStart;$("scanClose").onclick=scanStop;
 /* ================= MULTI : questions envoyées aux téléphones ================= */
 let qseq=0;
 function remoteAsk(ids,spec,onAnswer){
@@ -2216,7 +2265,8 @@ lgRender=function(o){
     if(v.startsWith("p:")){const p=(o.pick||[]).find(x=>x.name===v.slice(2));if(p)o.onPick(p)}
     else{const b=(o.btns||[])[+v.slice(2)];if(b)b[1]()}
   });
-  if(lgQ){$("lgNote").hidden=false;$("lgNote").textContent=(o.note&&!lg.auto?o.note+" · ":"")+phoneNote}
+  if(lgQ){$("lgNote").hidden=false;$("lgNote").textContent=(o.note&&!lg.auto?o.note+" · ":"")+(lg.auto?"📱 Le joueur concerné répond sur son téléphone.":phoneNote);
+    if(lg.auto){$("lgBig").hidden=true;if(o.big)$("lgPick").innerHTML=""}}
 };
 
 /* ---- vote sur les téléphones (Loup-garou, Undercover) ---- */
@@ -2311,6 +2361,16 @@ avShow=function(kind){
   avQ=remoteAsk(ids,{title:kind==="a"?"Action":"Vérité",text:$("avTxt").textContent,options:[{v:"ok",label:"Fait ✓"},{v:"no",label:"Je refuse"}]},(id,v)=>{avQ=null;(v==="ok"?$("avDone"):$("avSkip")).click()});
 };
 const _avTurn=avTurn;avTurn=function(){if(avQ){remoteClear(avQ);avQ=null}_avTurn()};
+const _startGage=startGage;startGage=function(level){
+  if(avQ){remoteClear(avQ);avQ=null}
+  _startGage(level);if(!host)return;
+  const ids=onlineIds([names[av.i%names.length]]);if(!ids.length)return;
+  setTimeout(()=>{if($("avGage").hidden||av.level!==level)return;
+    const opts=[{v:"ok",label:"Fait ✓"}];if(level<3)opts.push({v:"no",label:"Je refuse encore"});
+    avQ=remoteAsk(ids,{title:GAGE_LBL[level],text:$("gageTxt").textContent,options:opts},(id,v)=>{avQ=null;(v==="ok"?$("gageDone"):$("gageNo")).click()})},2900);
+};
+$("avSkip").onclick=()=>startGage(1);$("gageNo").onclick=()=>startGage(av.level+1);
+const _gageDone=$("gageDone").onclick;$("gageDone").onclick=()=>{if(avQ){remoteClear(avQ);avQ=null}_gageDone()};
 
 /* nettoyage en quittant un écran de jeu */
 const _show=show;

@@ -3,8 +3,8 @@
   "short_name": "ZBEUL",
   "description": "Les jeux de soirée qui mettent le zbeul : Undercover, Loup-garou, Dans ta tête, Action ou Vérité, Je n'ai jamais, Blind test.",
   "lang": "fr",
-  "start_url": "./",
-  "scope": "./",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#FFE14D",
@@ -48,5 +48,13 @@
       "name": "Action ou Vérité",
       "url": "./#av-setup"
     }
-  ]
+  ],
+  "launch_handler": {
+    "client_mode": [
+      "navigate-existing",
+      "auto"
+    ]
+  },
+  "handle_links": "preferred",
+  "id": "/"
 }
