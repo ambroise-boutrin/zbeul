@@ -480,6 +480,10 @@ body[data-game=bt] .btn{border-radius:999px}
 .cardgrid .rcard{width:100%;font-size:80%}
 .cardgrid .rcard{padding:6px;border-radius:12px}.cardgrid .rcard .in{padding:8px 6px;gap:3px}
 @media (prefers-reduced-motion:reduce){.rcard.flipin{animation:none}}
+.pickgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.pickgrid .tile{min-height:92px;transform:none!important;animation:none!important}
+.pickgrid .tile .t{font-size:18px}
+.pickgrid .tile::after{display:none}.pickgrid .tile[data-g=jn],.pickgrid .tile[data-g=lg]{background-image:none}
 </style>
 
 <div id="fx" aria-hidden="true"></div>
@@ -494,6 +498,12 @@ body[data-game=bt] .btn{border-radius:999px}
   <section id="home" class="scr">
     <div class="ticker" aria-hidden="true"><div><span>UNDERCOVER ✦</span><span>LOUP-GAROU ✦</span><span>DANS TA TÊTE ✦</span><span>ACTION OU VÉRITÉ ✦</span><span>JE N'AI JAMAIS ✦</span><span>BLIND TEST ✦</span><span>UNDERCOVER ✦</span><span>LOUP-GAROU ✦</span><span>DANS TA TÊTE ✦</span><span>ACTION OU VÉRITÉ ✦</span><span>JE N'AI JAMAIS ✦</span><span>BLIND TEST ✦</span></div></div>
     <div class="card" id="tourResume" hidden><div class="row" style="justify-content:space-between;align-items:center"><div><b id="tourResumeTxt">Tournoi en cours</b><div class="hint">Reprends là où vous en étiez.</div></div></div><div class="row"><button class="btn" type="button" id="tourResumeGo">Reprendre</button><button class="btn alt" type="button" id="tourAbort">Abandonner</button></div></div>
+    <div class="card" id="multiPick" hidden>
+      <div class="label">Multi-téléphones</div>
+      <h2 id="multiPickTitle">Choisis un jeu</h2>
+      <div class="pickgrid" id="multiPickGrid"></div>
+      <p class="hint">Les jeux 📱 utilisent les téléphones de tout le monde (rôles, votes, buzzer, réponses). Les autres se jouent sur ton tel.</p>
+    </div>
     <div class="tiles" id="tiles">
       <button class="tile" type="button" data-g="uc" data-go="uc-setup"><span class="t">Undercover</span><span class="d">Un mot secret, un imposteur, beaucoup de mauvaise foi.</span><span class="m">3–20 joueurs</span></button>
       <button class="tile" type="button" data-g="lg" data-go="lg-setup"><span class="t">Loup-garou</span><span class="d">L'appli te sert de maître du jeu, nuit après nuit.</span><span class="m">6+ joueurs</span></button>
@@ -2035,6 +2045,12 @@ let guest=null;  // {code,ch,name}
 const roomLink=c=>location.origin+location.pathname.replace(/index\.html$/,"")+"?room="+c;
 
 /* ---- hôte ---- */
+const MULTI_GAMES=[["uc","Undercover","📱 mots secrets + vote"],["lg","Loup-garou","📱 rôles, nuit, vote"],["bt","Blind test","📱 buzzer"],["jn","Je n'ai jamais","📱 réponses"],["av","Action ou Vérité","📱 cartes"],["dt","Dans ta tête","sur ton tel"]];
+function multiPickRender(){
+  const g=$("multiPickGrid");if(!g)return;g.innerHTML="";
+  $("multiPickTitle").textContent=`${names.length} joueurs prêts. Choisis un jeu`;
+  MULTI_GAMES.forEach(([k,n,sub])=>{const b=el("button","tile pick",null);b.type="button";b.dataset.g=k;b.dataset.go=k+"-setup";b.append(el("span","t",n),el("span","m",sub));g.appendChild(b)});
+}
 function multiRender(){
   $("multiOff").hidden=!!host;$("multiOn").hidden=!host;if(!host)return;
   $("multiCode").textContent=host.code;$("multiLink").value=roomLink(host.code);
@@ -2065,7 +2081,7 @@ function multiCreate(){
   try{$("multiHost").value=store.get("zb_host_name",names[0]||"")}catch(e){}
   drawQr(roomLink(code));multiRender();
 }
-function multiClose(){if(host){try{host.ch.send({type:"broadcast",event:"closed",payload:{}});sb.removeChannel(host.ch)}catch(e){}}host=null;multiRender()}
+function multiClose(){$("multiPick").hidden=true;if(host){try{host.ch.send({type:"broadcast",event:"closed",payload:{}});sb.removeChannel(host.ch)}catch(e){}}host=null;multiRender()}
 $("multiCreate").onclick=multiCreate;
 $("multiClose").onclick=multiClose;
 $("multiCopy").onclick=()=>{const t=$("multiLink").value;(navigator.clipboard?.writeText(t)||Promise.reject()).then(()=>{$("multiCopy").textContent="Lien copié"},()=>{$("multiLink").select()})};
@@ -2077,7 +2093,9 @@ $("multiUse").onclick=()=>{
   list.forEach(p=>{let n=p.name.trim()||"Joueur";let k=n,i=2;while(nn.some(x=>x.toLowerCase()===k.toLowerCase()))k=n+" "+i++;p.name=k;nn.push(k);profiles[k]={e:p.e||prof(k).e,c:p.c||prof(k).c}});
   if(nn.length<2)return;
   names=nn;store.set("uc_names",names);store.set("profiles",profiles);renderPlayers();
-  $("multiUse").textContent="C'est fait ✓";setTimeout(()=>$("multiUse").textContent="Jouer avec eux",1500);
+  host.ready=true;multiPickRender();
+  host.ch.send({type:"broadcast",event:"lobby",payload:{text:"L'hôte choisit le jeu…"}});
+  const t=$("multiPick");t.hidden=false;t.scrollIntoView({behavior:"smooth",block:"start"});
 };
 function remoteIdFor(name){if(!host)return null;const e=Object.entries(host.players).find(([id,p])=>p.name.toLowerCase()===String(name).toLowerCase());return e?e[0]:null}
 function sendTo(id){const p=host.sent[id];if(!p)return;host.ch.send({type:"broadcast",event:"secret",payload:Object.assign({to:id},p)})}
@@ -2140,6 +2158,7 @@ function joinGo(){
   ch.on("broadcast",{event:"ask"},({payload})=>{if(!payload.to.includes(myId))return;if(myAsk&&myAsk.qid===payload.qid)return;
     myAsk=Object.assign({},payload);if(payload.game&&THEMES[payload.game])setTheme(payload.game);$("joinHint").hidden=true;renderMyAsk();if(!payload.quiet){try{navigator.vibrate?.(60)}catch(e){}}});
   ch.on("broadcast",{event:"clear"},({payload})=>{if(myAsk&&myAsk.qid===payload.qid){myAsk=null;renderMyAsk();if(!mySecret||mySecret.acked)$("joinHint").hidden=false}});
+  ch.on("broadcast",{event:"lobby"},({payload})=>{if(!myAsk){$("joinHint").hidden=false;$("joinHint").textContent=payload.text}});
   ch.on("broadcast",{event:"closed"},()=>{$("joinStatus").textContent="L'hôte a fermé la partie";});
   ch.on("presence",{event:"sync"},()=>{const hostOn=Object.values(ch.presenceState()).flat().some(m=>m.role==="host");$("joinStatus").textContent=hostOn?`Connecté à la partie ${code}`:`Partie ${code} · en attente de l'hôte…`});
   ch.subscribe(st=>{if(st==="SUBSCRIBED"){ch.track({role:"player",id:myId,name,e:p.e,c:p.c});ch.send({type:"broadcast",event:"hello",payload:{id:myId}});guest.ok=true;joinRender();lockScreen&&lockScreen()}
