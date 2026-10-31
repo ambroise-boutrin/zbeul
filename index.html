@@ -539,6 +539,7 @@ body:not([data-game=home]) .logoimg{display:none}
         <div class="label">Connectés (<span id="multiCount">0</span>)</div>
         <div id="multiList" class="chips"></div>
         <div class="row" style="flex-wrap:nowrap;align-items:center"><span class="hint" style="white-space:nowrap">Toi :</span><input type="text" id="multiHost" maxlength="18" placeholder="Ton prénom (si tu joues)" aria-label="Ton prénom"></div>
+        <p class="hint" id="multiStatus"></p>
         <div class="row"><button class="btn mint" type="button" id="multiUse">Jouer avec eux</button><button class="btn alt" type="button" id="multiClose">Fermer la partie</button></div>
       </div>
     </div>
@@ -1069,7 +1070,7 @@ const TITLES={bt:["BLIND","TEST"],home:["ZBEUL",""],uc:["UNDER","COVER"],lg:["LO
 const INTROS={bt:"Fredonne, devine, domine.",uc:"Trouve l'imposteur. Ou deviens-le.",lg:"La nuit tombe sur le village…",dt:"Le tel sur le front. 3, 2, 1…",av:"Ici, on ne refuse pas. Ou alors on boit.",jn:"Les verres en l'air."};
 const seenIntro={};
 function setTheme(g){const prev=document.body.dataset.game;try{document.querySelector('meta[name=theme-color]').content={bt:"#0E1A4A",home:"#FFE14D",uc:"#15161A",lg:"#0B1026",dt:"#FF6B1A",av:"#14020B",jn:"#0F3B2E"}[g]||"#FFE14D"}catch(e){}document.body.dataset.phase="";document.body.dataset.game=g;$("tag").textContent=THEMES[g];$("l1").textContent=TITLES[g][0];$("l2").textContent=TITLES[g][1];$("l2").hidden=!TITLES[g][1];
-  if(g!==prev&&INTROS[g]&&!seenIntro[g]&&!matchMedia("(prefers-reduced-motion: reduce)").matches){seenIntro[g]=1;const it=$("intro");it.querySelector(".in-t").textContent=TITLES[g].join(" ");it.querySelector(".in-s").textContent=INTROS[g];it.hidden=false;it.style.animation="none";void it.offsetWidth;it.style.animation="";clearTimeout(it._t);it._t=setTimeout(()=>it.hidden=true,1300)}}
+  if(g!==prev&&INTROS[g]&&!seenIntro[g]&&document.body.dataset.guest!=="1"&&!matchMedia("(prefers-reduced-motion: reduce)").matches){seenIntro[g]=1;const it=$("intro");it.querySelector(".in-t").textContent=TITLES[g].join(" ");it.querySelector(".in-s").textContent=INTROS[g];it.hidden=false;it.style.animation="none";void it.offsetWidth;it.style.animation="";clearTimeout(it._t);it._t=setTimeout(()=>it.hidden=true,1300)}}
 $("intro").onclick=()=>$("intro").hidden=true;
 (function buildFx(){const fx=$("fx");const add=(c,st)=>{const e=el("div",c);if(st)Object.assign(e.style,st);fx.appendChild(e);return e};
   add("uc scan");add("uc mark").textContent="TOP SECRET";
@@ -1094,7 +1095,7 @@ function renderPlayers(){
     r.innerHTML=`<button class="avb" type="button" aria-label="Changer l'emoji et la couleur"></button><input type="text" id="p${i}" maxlength="18" aria-label="Nom du joueur ${i+1}"><button class="x" type="button" aria-label="Retirer">×</button>`;
     const inp=r.querySelector("input");inp.value=nm;
     const av_=r.querySelector(".avb");const pp=prof(nm);av_.textContent=pp.e;av_.style.setProperty("--pc",pp.c);av_.onclick=()=>openPicker(i,r);
-    inp.addEventListener("input",()=>{const old=names[i];names[i]=inp.value;if(profiles[old]&&!profiles[inp.value]){profiles[inp.value]=profiles[old];store.set("profiles",profiles)}store.set("uc_names",names)});
+    inp.addEventListener("input",()=>{const old=names[i];names[i]=inp.value;try{onRename(old,inp.value.trim())}catch(e){}if(profiles[old]&&!profiles[inp.value]){profiles[inp.value]=profiles[old];store.set("profiles",profiles)}store.set("uc_names",names)});
     r.querySelector(".x").onclick=()=>{if(names.length<=2)return;names.splice(i,1);store.set("uc_names",names);renderPlayers()};
     box.appendChild(r);
   });
@@ -2051,86 +2052,149 @@ function btScore(finder,hummer){
 const SB_URL="https://awdzwzetgqwevvqnmhvl.supabase.co";
 const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3ZHp3emV0Z3F3ZXZ2cW5taHZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxNjM5MzgsImV4cCI6MjEwMDczOTkzOH0.vvN0Uva8I9YbwsM2HEgNY2xf5ZpBxsagZqJMZmKKQB4";
 let sb=null;
-function sbc(){if(!sb&&window.supabase)sb=window.supabase.createClient(SB_URL,SB_KEY,{realtime:{params:{eventsPerSecond:20}}});return sb}
-const myId=(()=>{let v=null;try{v=sessionStorage.getItem("zb_id")}catch(e){}if(!v){v=Math.random().toString(36).slice(2,10);try{sessionStorage.setItem("zb_id",v)}catch(e){}}return v})();
+function sbc(){if(!sb&&window.supabase)sb=window.supabase.createClient(SB_URL,SB_KEY,{realtime:{params:{eventsPerSecond:30},heartbeatIntervalMs:15000}});return sb}
+/* identité permanente du téléphone (survit à la fermeture de l'appli) */
+const myId=(()=>{let v=store.get("zb_pid",null);if(!v||v.length<12){v=[...crypto.getRandomValues(new Uint8Array(9))].map(b=>b.toString(36).padStart(2,"0")).join("").slice(0,16);store.set("zb_pid",v)}return v})();
 const roomCode=()=>{const A="ABCDEFGHJKLMNPQRSTUVWXYZ";let s="";for(let i=0;i<4;i++)s+=A[Math.floor(Math.random()*A.length)];return s};
-let host=null;   // {code,ch,players:{id:{name,e,c,online}},sent:{id:payload},acks:{}}
-let guest=null;  // {code,ch,name}
+let host=null;   // {code,ch,players:{id:{name,e,c,pk,inPres,last,off,rtt}},sent,acks,asks}
+let guest=null;  // {code,ch,name,ok,joining,closed}
 const roomLink=c=>location.origin+location.pathname.replace(/index\.html$/,"")+"?room="+c;
+const ONLINE_GRACE=40000;
 
-/* ---- hôte ---- */
+/* ---- chiffrement de bout en bout (ECDH P-256 + AES-GCM) ---- */
+const enc={kp:null,pub:null,keys:{}};
+const b64=buf=>btoa(String.fromCharCode(...new Uint8Array(buf)));
+const ub64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+let encReady=null;
+function cryptoInit(){if(!encReady)encReady=(async()=>{enc.kp=await crypto.subtle.generateKey({name:"ECDH",namedCurve:"P-256"},false,["deriveKey"]);enc.pub=b64(await crypto.subtle.exportKey("raw",enc.kp.publicKey))})();return encReady}
+async function sharedKey(peer){if(!enc.keys[peer]){enc.keys[peer]=(async()=>{const pk=await crypto.subtle.importKey("raw",ub64(peer),{name:"ECDH",namedCurve:"P-256"},false,[]);
+  return crypto.subtle.deriveKey({name:"ECDH",public:pk},enc.kp.privateKey,{name:"AES-GCM",length:256},false,["encrypt","decrypt"])})()}return enc.keys[peer]}
+async function seal(peer,obj){await cryptoInit();const k=await sharedKey(peer);const iv=crypto.getRandomValues(new Uint8Array(12));
+  return {iv:b64(iv),ct:b64(await crypto.subtle.encrypt({name:"AES-GCM",iv},k,new TextEncoder().encode(JSON.stringify(obj))))}}
+async function unseal(peer,box){await cryptoInit();const k=await sharedKey(peer);
+  return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:"AES-GCM",iv:ub64(box.iv)},k,ub64(box.ct))))}
+
+/* ---- garde le projet Supabase éveillé (offre gratuite = pause après 7 jours sans requête) ---- */
+function sbKeepAlive(){try{if(!navigator.onLine)return;if(Date.now()-store.get("zb_ka",0)<20*3600e3)return;
+  fetch(SB_URL+"/rest/v1/",{headers:{apikey:SB_KEY,Authorization:"Bearer "+SB_KEY}}).then(r=>{if(r.status<500)store.set("zb_ka",Date.now())}).catch(()=>{})}catch(e){}}
+setTimeout(sbKeepAlive,4000);
+
+/* ================= HÔTE ================= */
 const MULTI_GAMES=[["uc","Undercover","📱 mots secrets + vote"],["lg","Loup-garou","📱 rôles, nuit, vote"],["bt","Blind test","📱 buzzer"],["jn","Je n'ai jamais","📱 réponses"],["av","Action ou Vérité","📱 cartes"],["dt","Dans ta tête","sur ton tel"]];
 function multiPickRender(){
   const g=$("multiPickGrid");if(!g)return;g.innerHTML="";
   $("multiPickTitle").textContent=`${names.length} joueurs prêts. Choisis un jeu`;
   MULTI_GAMES.forEach(([k,n,sub])=>{const b=el("button","tile pick",null);b.type="button";b.dataset.g=k;b.dataset.go=k+"-setup";b.append(el("span","t",n),el("span","m",sub));g.appendChild(b)});
 }
+const isOnline=p=>!!p&&(p.inPres||Date.now()-(p.last||0)<ONLINE_GRACE);
 function multiRender(){
   $("multiOff").hidden=!!host;$("multiOn").hidden=!host;if(!host)return;
   $("multiCode").textContent=host.code;$("multiLink").value=roomLink(host.code);
-  const list=Object.values(host.players).filter(p=>p.online);
+  const list=Object.values(host.players).filter(isOnline);
   $("multiCount").textContent=list.length;
   const box=$("multiList");box.innerHTML="";
   if(!list.length)box.appendChild(el("p","hint","Personne pour l'instant. Scannez le QR code."));
-  list.forEach(p=>{const d=el("div","chip",(p.e||"🙂")+" "+p.name);box.appendChild(d)});
+  list.forEach(p=>box.appendChild(el("div","chip",(p.e||"🙂")+" "+p.name)));
+  $("multiStatus").textContent=host.status||"";$("multiStatus").className=host.statusErr?"err":"hint";
 }
 function drawQr(text){try{const q=qrcode(0,"M");q.addData(text);q.make();$("multiQr").innerHTML=q.createSvgTag({cellSize:4,margin:0,scalable:true})}catch(e){$("multiQr").textContent=""}}
-function multiCreate(){
+function touchPlayer(id,meta){
+  if(!host)return;const p=host.players[id]||(host.players[id]={});const wasOn=isOnline(p);
+  if(meta){if(meta.name&&!p.renamed)p.name=meta.name;if(meta.e)p.e=meta.e;if(meta.c)p.c=meta.c;if(meta.pk)p.pk=meta.pk}
+  p.last=Date.now();
+  if(!wasOn&&p.pk)onPlayerBack(id);
+}
+function onPlayerBack(id){
+  if(host.sent[id]&&!host.acks[id])sendTo(id);
+  resendAsks(id);addLateTargets(id);pingOne(id);
+}
+async function multiCreate(code,silent){
   if(!sbc()){alertBox("Le mode multi-téléphones a besoin d'internet.");return}
-  const code=roomCode();
-  const ch=sb.channel("zbeul:"+code,{config:{broadcast:{self:false},presence:{key:"host-"+myId}}});
-  host={code,ch,players:{},sent:{},acks:{}};
+  await cryptoInit();
+  code=code||roomCode();
+  if(host&&host.ch){try{sb.removeChannel(host.ch)}catch(e){}}
+  const ch=sb.channel("zbeul:"+code,{config:{broadcast:{self:false,ack:false},presence:{key:"host-"+myId}}});
+  host={code,ch,players:{},sent:{},acks:{},asks:{},status:"Connexion au serveur…",verified:!!silent};
+  store.set("zb_host",{code,t:Date.now()});
   ch.on("presence",{event:"sync"},()=>{
-    const st=ch.presenceState();const seen={};
-    Object.values(st).flat().forEach(m=>{if(m.role!=="player")return;seen[m.id]=1;
-      const was=host.players[m.id];host.players[m.id]={name:m.name,e:m.e,c:m.c,online:true};
-      if(was&&!was.online||!was){if(host.sent[m.id]&&!host.acks[m.id])sendTo(m.id);resendAsks(m.id)}});
-    Object.keys(host.players).forEach(id=>{if(!seen[id])host.players[id].online=false});
+    const st=Object.values(ch.presenceState()).flat();
+    if(!host.verified){host.verified=true;if(st.some(m=>m.role==="host"&&m.id!==myId)){multiClose(true);return multiCreate()}}
+    const inPres={};
+    st.forEach(m=>{if(m.role!=="player")return;inPres[m.id]=1;const p=host.players[m.id];const was=isOnline(p);
+      touchPlayer(m.id,m);host.players[m.id].inPres=true;if(was)return});
+    Object.entries(host.players).forEach(([id,p])=>{if(!inPres[id])p.inPres=false});
     multiRender();remoteRender();
   });
-  ch.on("broadcast",{event:"ack"},({payload})=>{host.acks[payload.id]=true;remoteRender()});
-  ch.on("broadcast",{event:"answer"},({payload})=>{const a=host.asks&&host.asks[payload.qid];if(!a||!a.ids.includes(payload.id))return;a.answered[payload.id]=payload.v;try{a.onAnswer(payload.id,payload.v)}catch(e){console.error(e)}});
-  ch.on("broadcast",{event:"hello"},({payload})=>{if(host.sent[payload.id]&&!host.acks[payload.id])sendTo(payload.id);resendAsks(payload.id)});
-  ch.subscribe(st=>{if(st==="SUBSCRIBED")ch.track({role:"host",id:myId})});
+  ch.on("broadcast",{event:"hello"},({payload})=>{touchPlayer(payload.id,payload);if(host.sent[payload.id]&&!host.acks[payload.id])sendTo(payload.id);resendAsks(payload.id);addLateTargets(payload.id);multiRender();remoteRender()});
+  ch.on("broadcast",{event:"ack"},({payload})=>{touchPlayer(payload.id);host.acks[payload.id]=true;remoteRender()});
+  ch.on("broadcast",{event:"pong"},({payload})=>{touchPlayer(payload.id);const p=host.players[payload.id];const now=Date.now(),rtt=now-payload.t0;
+    if(rtt>=0&&(!p.rtt||rtt<=p.rtt*1.4)){p.rtt=p.rtt?Math.min(p.rtt,rtt):rtt;p.off=payload.tp-(payload.t0+rtt/2)}});
+  ch.on("broadcast",{event:"answer"},async({payload})=>{
+    touchPlayer(payload.id);const a=host.asks[payload.qid];if(!a||!a.ids.includes(payload.id))return;
+    let d;try{d=await unseal(payload.ppk,payload.box)}catch(e){return}
+    if(!host.asks[payload.qid])return;a.answered[payload.id]=d.v;try{a.onAnswer(payload.id,d.v,d)}catch(e){console.error(e)}});
+  ch.subscribe(st=>{
+    if(st==="SUBSCRIBED"){ch.track({role:"host",id:myId,pk:enc.pub});host.status="Serveur connecté ✓";host.statusErr=false}
+    else if(st==="CHANNEL_ERROR"||st==="TIMED_OUT"){host.status="Serveur injoignable. Vérifie ta connexion. Si ça dure, le serveur Supabase est peut-être en pause.";host.statusErr=true}
+    else if(st==="CLOSED"&&host&&host.ch===ch){host.status="Connexion fermée, reconnexion…";host.statusErr=true}
+    multiRender()});
   try{$("multiHost").value=store.get("zb_host_name",names[0]||"")}catch(e){}
-  drawQr(roomLink(code));multiRender();
+  drawQr(roomLink(code));multiRender();lockScreen();
 }
-function multiClose(){$("multiPick").hidden=true;if(host){const ch=host.ch;try{ch.send({type:"broadcast",event:"closed",payload:{}});setTimeout(()=>{try{sb.removeChannel(ch)}catch(e){}},1500)}catch(e){}}host=null;multiRender()}
-$("multiCreate").onclick=multiCreate;
-$("multiClose").onclick=multiClose;
+function multiClose(silent){
+  $("multiPick").hidden=true;
+  if(host){const ch=host.ch;if(!silent)try{ch.send({type:"broadcast",event:"closed",payload:{}})}catch(e){}setTimeout(()=>{try{sb.removeChannel(ch)}catch(e){}},1500)}
+  host=null;if(!silent)store.set("zb_host",null);multiRender();
+}
+$("multiCreate").onclick=()=>multiCreate();
+$("multiClose").onclick=()=>multiClose();
 $("multiCopy").onclick=()=>{const t=$("multiLink").value;(navigator.clipboard?.writeText(t)||Promise.reject()).then(()=>{$("multiCopy").textContent="Lien copié"},()=>{$("multiLink").select()})};
 $("multiHost").addEventListener("input",()=>store.set("zb_host_name",$("multiHost").value));
 $("multiUse").onclick=()=>{
   if(!host)return;const hn=$("multiHost").value.trim();
-  const list=Object.values(host.players).filter(p=>p.online);
+  const list=Object.entries(host.players).filter(([id,p])=>isOnline(p));
   const nn=[];if(hn)nn.push(hn);
-  list.forEach(p=>{let n=p.name.trim()||"Joueur";let k=n,i=2;while(nn.some(x=>x.toLowerCase()===k.toLowerCase()))k=n+" "+i++;p.name=k;nn.push(k);profiles[k]={e:p.e||prof(k).e,c:p.c||prof(k).c}});
+  list.forEach(([id,p])=>{const base=(p.name||"Joueur").trim()||"Joueur";let k=base,i=2;while(nn.some(x=>x.toLowerCase()===k.toLowerCase()))k=base+" "+i++;
+    if(k!==p.name){p.name=k;p.renamed=true;hostSend("rename",id,{name:k})}nn.push(k);profiles[k]={e:p.e||prof(k).e,c:p.c||prof(k).c}});
   if(nn.length<2)return;
   names=nn;store.set("uc_names",names);store.set("profiles",profiles);renderPlayers();
-  host.ready=true;multiPickRender();
-  host.ch.send({type:"broadcast",event:"lobby",payload:{text:"L'hôte choisit le jeu…"}});
+  multiPickRender();host.ch.send({type:"broadcast",event:"lobby",payload:{text:"L'hôte choisit le jeu…"}});
   const t=$("multiPick");t.hidden=false;t.scrollIntoView({behavior:"smooth",block:"start"});
 };
-function remoteIdFor(name){if(!host)return null;const e=Object.entries(host.players).find(([id,p])=>p.name.toLowerCase()===String(name).toLowerCase());return e?e[0]:null}
-function sendTo(id){const p=host.sent[id];if(!p)return;host.ch.send({type:"broadcast",event:"secret",payload:Object.assign({to:id},p)})}
+/* renommage d'un joueur dans la liste : on suit son téléphone */
+function onRename(oldN,newN){
+  if(!host||!oldN||!newN||oldN===newN)return;const id=remoteIdFor(oldN);if(!id)return;
+  host.players[id].name=newN;host.players[id].renamed=true;clearTimeout(host.players[id].rnT);
+  host.players[id].rnT=setTimeout(()=>hostSend("rename",id,{name:newN}),600);multiRender();
+}
+function remoteIdFor(name){
+  if(!host||!name)return null;const n=String(name).toLowerCase();
+  const c=Object.entries(host.players).filter(([id,p])=>(p.name||"").toLowerCase()===n);
+  c.sort((a,b)=>(isOnline(b[1])-isOnline(a[1]))||((b[1].last||0)-(a[1].last||0)));
+  return c.length?c[0][0]:null;
+}
+async function hostSend(event,id,data){const p=host&&host.players[id];if(!p||!p.pk)return;
+  try{const box=await seal(p.pk,data);host.ch.send({type:"broadcast",event,payload:{to:id,hpk:enc.pub,box}})}catch(e){}}
+function sendTo(id){const d=host&&host.sent[id];if(d)hostSend("secret",id,d)}
+function pingOne(id){if(host)host.ch.send({type:"broadcast",event:"ping",payload:{to:id,t0:Date.now()}})}
+setInterval(()=>{if(!host)return;store.set("zb_host",{code:host.code,t:Date.now()});Object.entries(host.players).forEach(([id,p])=>{if(isOnline(p))pingOne(id)});multiRender()},15000);
 let remoteDone=null;
 function remoteRender(){
   if(!host||$("remote").hidden)return;
   const box=$("remoteList");box.innerHTML="";let all=true;
-  Object.keys(host.sent).forEach(id=>{const p=host.players[id]||{name:host.sent[id].name};const ok=host.acks[id];if(!ok)all=false;
-    const d=el("div","li");const l=el("span");const dot=el("i","dot"+(p.online?"":" off"));l.append(dot,document.createTextNode(pn(host.sent[id].name)));
-    d.append(l,el("span","pill "+(ok?"r-civil":"r-white"),ok?"Vu ✓":p.online?"Envoyé":"Hors ligne"));box.appendChild(d)});
+  Object.keys(host.sent).forEach(id=>{const p=host.players[id]||{};const ok=host.acks[id];if(!ok)all=false;
+    const d=el("div","li");const l=el("span");l.append(el("i","dot"+(isOnline(p)?"":" off")),document.createTextNode(pn(host.sent[id].name)));
+    d.append(l,el("span","pill "+(ok?"r-civil":"r-white"),ok?"Vu ✓":isOnline(p)?"Envoyé":"Hors ligne"));box.appendChild(d)});
   $("remoteGo").textContent=all?"Tout le monde a vu, on commence":"Commencer quand même";
 }
 $("remoteResend").onclick=()=>{Object.keys(host.sent).forEach(id=>{if(!host.acks[id])sendTo(id)})};
 $("remoteGo").onclick=()=>{const f=remoteDone;remoteDone=null;f&&f()};
-/* remplace la distribution « passe le tel » quand des joueurs sont connectés */
+/* distribution des rôles : téléphones connectés au lieu de « passe le tel » */
 const _passPhone=passPhone;
 passPhone=function(items,onDone){
   if(!host)return _passPhone(items,onDone);
-  const game=document.body.dataset.game;
-  const remote=[],local=[];
-  items.forEach(it=>{const id=remoteIdFor(it.name);(id&&host.players[id].online?remote:local).push(Object.assign({},it,{id}))});
+  const game=document.body.dataset.game;const remote=[],local=[];
+  items.forEach(it=>{const id=remoteIdFor(it.name);(id&&isOnline(host.players[id])&&host.players[id].pk?remote:local).push(Object.assign({},it,{id}))});
   if(!remote.length)return _passPhone(items,onDone);
   host.sent={};host.acks={};
   remote.forEach(it=>{host.sent[it.id]={name:it.name,kicker:it.kicker,word:it.word,note:it.note,card:it.card||null,game,ts:Date.now()};sendTo(it.id)});
@@ -2138,107 +2202,27 @@ passPhone=function(items,onDone){
   if(local.length)_passPhone(local,toRemote);else toRemote();
 };
 
-/* ---- joueur ---- */
-let mySecret=null;
-function joinRender(){
-  const joined=!!(guest&&guest.ok);
-  $("joinForm").hidden=joined;$("joinWait").hidden=!joined;
-  if(!joined)return;
-  $("joinHello").textContent=pn(guest.name);
-  const s=$("mySecret");
-  if(!mySecret){s.hidden=true;$("mySeen").hidden=true;$("myAgain").hidden=true;$("joinHint").hidden=false;return}
-  $("joinHint").hidden=true;
-}
-function showMySecret(cover){
-  const s=$("mySecret");s.hidden=false;$("myAgain").hidden=true;
-  if(cover){s.className="secret";s.disabled=false;s.innerHTML="";s.append(el("span",null,"Nouveau rôle ! Touche pour le voir"),el("small",null,"Cache bien ton écran"));$("mySeen").hidden=true}
-}
-$("mySecret").onclick=()=>{if(!mySecret)return;const s=$("mySecret");s.className="secret open";s.disabled=true;s.innerHTML="";
-  if(mySecret.card&&LG_CARD[mySecret.card])showCardIn(s,mySecret.card);else s.append(el("small",null,mySecret.kicker),el("div","word",mySecret.word),el("small",null,mySecret.note));$("mySeen").hidden=false;try{navigator.vibrate?.(80)}catch(e){}};
-$("mySeen").onclick=()=>{if(guest&&mySecret&&!mySecret.acked){guest.ch.send({type:"broadcast",event:"ack",payload:{id:myId}});mySecret.acked=true}
-  $("mySecret").hidden=true;$("mySeen").hidden=true;$("myAgain").hidden=false;$("joinHint").hidden=false;$("joinHint").textContent="C'est noté. Garde ce téléphone sous la main : les votes et les actions arriveront ici."};
-$("myAgain").onclick=()=>{showMySecret(true);$("mySecret").click()};
-function joinGo(){
-  const name=$("joinName").value.trim();const err=$("joinErr");
-  if(!name){err.textContent="Écris ton prénom pour rejoindre.";err.hidden=false;return}
-  if(!sbc()){err.textContent="Pas de connexion internet. Vérifie ton réseau et réessaie.";err.hidden=false;return}
-  err.hidden=true;store.set("zb_guest_name",name);
-  const code=guest.code,p=prof(name);
-  const ch=sb.channel("zbeul:"+code,{config:{broadcast:{self:false},presence:{key:myId}}});
-  guest={code,ch,name,ok:false};
-  ch.on("broadcast",{event:"secret"},({payload})=>{if(payload.to!==myId)return;
-    if(mySecret&&mySecret.ts===payload.ts){if(mySecret.acked)ch.send({type:"broadcast",event:"ack",payload:{id:myId}});return}
-    mySecret=Object.assign({},payload);if(payload.game&&THEMES[payload.game])setTheme(payload.game);joinRender();showMySecret(true);try{navigator.vibrate?.([60,60,60])}catch(e){}});
-  ch.on("broadcast",{event:"ask"},({payload})=>{if(!payload.to.includes(myId))return;if(myAsk&&myAsk.qid===payload.qid)return;
-    myAsk=Object.assign({},payload);if(payload.game&&THEMES[payload.game])setTheme(payload.game);$("joinHint").hidden=true;renderMyAsk();if(!payload.quiet){try{navigator.vibrate?.(60)}catch(e){}}});
-  ch.on("broadcast",{event:"clear"},({payload})=>{if(myAsk&&myAsk.qid===payload.qid){myAsk=null;renderMyAsk();if(!mySecret||mySecret.acked)$("joinHint").hidden=false}});
-  ch.on("broadcast",{event:"lobby"},({payload})=>{if(!myAsk){$("joinHint").hidden=false;$("joinHint").textContent=payload.text}});
-  ch.on("broadcast",{event:"closed"},()=>{guest.closed=true;$("joinStatus").textContent="L'hôte a fermé la partie";$("joinHint").hidden=false;$("joinHint").textContent="Tu peux quitter la partie, ou attendre qu'il en recrée une.";myAsk=null;renderMyAsk()});
-  ch.on("presence",{event:"sync"},()=>{if(guest.closed)return;const hostOn=Object.values(ch.presenceState()).flat().some(m=>m.role==="host");$("joinStatus").textContent=hostOn?`Connecté à la partie ${code}`:`Partie ${code} · en attente de l'hôte…`});
-  ch.subscribe(st=>{if(st==="SUBSCRIBED"){ch.track({role:"player",id:myId,name,e:p.e,c:p.c});ch.send({type:"broadcast",event:"hello",payload:{id:myId}});guest.ok=true;joinRender();lockScreen&&lockScreen()}
-    else if(st==="CHANNEL_ERROR"||st==="TIMED_OUT"){$("joinStatus").textContent="Connexion perdue, reconnexion…"}});
-}
-$("joinGo").onclick=joinGo;
-$("joinName").addEventListener("keydown",e=>{if(e.key==="Enter")joinGo()});
-$("joinAv").onclick=()=>{const n=$("joinName").value.trim()||"moi";const p=prof(n);p.e=EMOJIS[(EMOJIS.indexOf(p.e)+1)%EMOJIS.length];store.set("profiles",profiles);$("joinAv").textContent=p.e};
-$("joinName").addEventListener("input",()=>{const p=prof($("joinName").value.trim()||"moi");$("joinAv").textContent=p.e;$("joinAv").style.setProperty("--pc",p.c)});
-$("joinLeave").onclick=()=>{try{sessionStorage.removeItem("zb_room")}catch(e){}try{sb.removeChannel(guest.ch)}catch(e){}guest=null;mySecret=null;window.history.replaceState(null,"",location.pathname);show("home")};
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&guest&&guest.ok){try{guest.ch.send({type:"broadcast",event:"hello",payload:{id:myId}})}catch(e){}}});
-function alertBox(t){const e=$("homeErr");e.textContent=t;e.hidden=false}
-function startJoin(code){
-  code=String(code||"").toUpperCase().replace(/[^A-Z]/g,"").slice(0,4);if(code.length!==4)return false;
-  if(guest&&guest.ch){try{sb.removeChannel(guest.ch)}catch(e){}}
-  guest={code,ok:false};mySecret=null;myAsk=null;$("joinCode").textContent=code;
-  const n=store.get("zb_guest_name","");$("joinName").value=n;const p=prof(n||"moi");$("joinAv").textContent=p.e;$("joinAv").style.setProperty("--pc",p.c);
-  joinRender();show("join");document.getElementById("intro").hidden=true;
-  try{window.history.replaceState(null,"","?room="+code);sessionStorage.setItem("zb_room",code)}catch(e){}
-  if(n)setTimeout(joinGo,50);
-  return true;
-}
-(function bootJoin(){const m=/[?&]room=([A-Za-z]{4})/.exec(location.search);let c=m&&m[1];if(!c){try{c=sessionStorage.getItem("zb_room")}catch(e){}}if(c)setTimeout(()=>startJoin(c),0)})();
-$("joinCodeGo").onclick=()=>{const v=$("joinCodeIn").value;if(!startJoin(v)){$("joinCodeErr").textContent="Le code fait 4 lettres, par exemple KRBZ.";$("joinCodeErr").hidden=false}};
-$("joinCodeIn").addEventListener("keydown",e=>{if(e.key==="Enter")$("joinCodeGo").click()});
-$("joinCodeIn").addEventListener("input",e=>{e.target.value=e.target.value.toUpperCase().replace(/[^A-Z]/g,"")});
-/* scanner de QR intégré */
-let scanStream=null,scanRaf=0;
-function loadJsQR(){return window.jsQR?Promise.resolve():new Promise((ok,ko)=>{const sc=document.createElement("script");sc.src="lib/jsqr.js";sc.onload=ok;sc.onerror=ko;document.head.appendChild(sc)})}
-function scanStop(){cancelAnimationFrame(scanRaf);if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null}$("scanner").hidden=true}
-function codeFromText(t){const m=/[?&]room=([A-Za-z]{4})/.exec(t)||/^([A-Za-z]{4})$/.exec(t.trim());return m?m[1]:null}
-async function scanStart(){
-  const err=$("joinCodeErr");err.hidden=true;
-  try{
-    scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false});
-  }catch(e){err.textContent="Impossible d'ouvrir la caméra. Autorise l'appareil photo, ou tape le code.";err.hidden=false;return}
-  $("scanner").hidden=false;const v=$("scanVideo");v.srcObject=scanStream;v.setAttribute("playsinline","");await v.play().catch(()=>{});
-  const det=("BarcodeDetector" in window)?new BarcodeDetector({formats:["qr_code"]}):null;
-  if(!det)await loadJsQR().catch(()=>{});
-  const cv=document.createElement("canvas"),cx=cv.getContext("2d",{willReadFrequently:true});
-  const tick=async()=>{
-    if(!scanStream)return;
-    if(v.readyState>=2){
-      let txt=null;
-      try{if(det){const r=await det.detect(v);if(r[0])txt=r[0].rawValue}
-        else if(window.jsQR){const w=v.videoWidth,h=v.videoHeight,sc=Math.min(1,640/w);cv.width=w*sc;cv.height=h*sc;cx.drawImage(v,0,0,cv.width,cv.height);const r=jsQR(cx.getImageData(0,0,cv.width,cv.height).data,cv.width,cv.height);if(r)txt=r.data}}catch(e){}
-      const code=txt&&codeFromText(txt);
-      if(code){try{navigator.vibrate?.(80)}catch(e){}scanStop();startJoin(code);return}
-    }
-    scanRaf=requestAnimationFrame(tick);
-  };tick();
-}
-$("scanBtn").onclick=scanStart;$("scanClose").onclick=scanStop;
-/* ================= MULTI : questions envoyées aux téléphones ================= */
+/* ---- questions envoyées aux téléphones ---- */
 let qseq=0;
-function remoteAsk(ids,spec,onAnswer){
-  if(!host||!ids.length)return null;
+/* targets : noms des joueurs visés (permet d'ajouter un retardataire) ; decoy : messages leurres aux autres pour ne rien trahir */
+function remoteAsk(ids,spec,onAnswer,opt){
+  opt=opt||{};if(!host||!ids.length)return null;
   const qid="q"+(++qseq)+"_"+Date.now().toString(36);
-  host.asks=host.asks||{};host.asks[qid]={ids,spec,onAnswer,answered:{}};
-  host.ch.send({type:"broadcast",event:"ask",payload:Object.assign({qid,to:ids,game:document.body.dataset.game},spec)});
+  host.asks[qid]={ids:[...ids],spec,onAnswer,answered:{},targets:opt.targets||null,decoy:!!opt.decoy};
+  const game=document.body.dataset.game;
+  ids.forEach(id=>hostSend("ask",id,Object.assign({qid,game},spec)));
+  if(opt.decoy)Object.entries(host.players).forEach(([id,p])=>{if(!ids.includes(id)&&isOnline(p))hostSend("ask",id,{qid,decoy:true})});
   return qid;
 }
-function remoteClear(qid){if(!host||!qid||!host.asks||!host.asks[qid])return;delete host.asks[qid];host.ch.send({type:"broadcast",event:"clear",payload:{qid}})}
-function remoteClearAll(){if(!host||!host.asks)return;Object.keys(host.asks).forEach(remoteClear)}
-function resendAsks(id){if(!host||!host.asks)return;Object.entries(host.asks).forEach(([qid,a])=>{if(a.ids.includes(id)&&!a.answered[id])host.ch.send({type:"broadcast",event:"ask",payload:Object.assign({qid,to:a.ids,game:document.body.dataset.game},a.spec)})})}
-function onlineIds(list){return list.map(p=>remoteIdFor(p.name||p)).filter(id=>id&&host.players[id]&&host.players[id].online)}
+function remoteClear(qid){if(!host||!qid||!host.asks[qid])return;delete host.asks[qid];host.ch.send({type:"broadcast",event:"clear",payload:{qid}})}
+function remoteClearAll(){if(host)Object.keys(host.asks).forEach(remoteClear)}
+function resendAsks(id){if(!host)return;const game=document.body.dataset.game;
+  Object.entries(host.asks).forEach(([qid,a])=>{if(a.ids.includes(id)&&!(id in a.answered))hostSend("ask",id,Object.assign({qid,game},a.spec))})}
+function addLateTargets(id){if(!host)return;const p=host.players[id];if(!p)return;
+  Object.entries(host.asks).forEach(([qid,a])=>{if(!a.targets||a.ids.includes(id))return;
+    if(a.targets.some(n=>n.toLowerCase()===(p.name||"").toLowerCase())){a.ids.push(id);hostSend("ask",id,Object.assign({qid,game:document.body.dataset.game},a.spec));
+      if(voteCtx&&voteCtx.qid===qid){voteCtx.ids=a.ids;voteRender()}}})}
+function onlineIds(list){if(!host)return[];return [...new Set(list.map(p=>remoteIdFor(p.name||p)).filter(id=>id&&isOnline(host.players[id])&&host.players[id].pk))]}
 const phoneNote="📱 Réponse attendue sur un téléphone. Vous pouvez aussi toucher ici.";
 
 /* ---- Loup-garou : actions de nuit sur le téléphone du rôle ---- */
@@ -2252,30 +2236,43 @@ lgRender=function(o){
   const t=lg.tok,say=o.say||"";
   if(!o.pick&&!(o.btns||[]).length)return;
   if(/rendors-toi|rendormez-vous|^La nuit tombe|^Le soleil se lève|^Posez le téléphone|^Donnez le téléphone/.test(say)&&!o.pick)return;
-  let actors=null;
+  let actors=null,wolves=false;
   const hm=/^(.+) était le chasseur/.exec(say);
-  if(hm){actors=lg.players.filter(p=>p.name===hm[1])}
-  else{const a=LG_ACTORS.find(([re])=>re.test(say));if(!a)return;
-    actors=a[1]==="wolves"?lgAlive().filter(p=>p.wolf):lgAlive().filter(p=>p.role===a[1])}
+  if(hm)actors=lg.players.filter(p=>p.name===hm[1]);
+  else{const a=LG_ACTORS.find(([re])=>re.test(say));if(!a)return;wolves=a[1]==="wolves";
+    actors=wolves?lgAlive().filter(p=>p.wolf):lgAlive().filter(p=>p.role===a[1])}
   const ids=onlineIds(actors);if(!ids.length)return;
   const opts=[];(o.pick||[]).forEach(p=>opts.push({v:"p:"+p.name,label:p.name}));(o.btns||[]).forEach(([tx],i)=>opts.push({v:"b:"+i,label:tx}));
   const text=/^Montre ce rôle/.test(say)?"Voici son rôle :":say;
-  lgQ=remoteAsk(ids,{title:$("lgPhase").textContent,text,big:o.big||"",note:o.note||"",options:opts,quiet:true},(id,v)=>{
-    if(lg.tok!==t)return;
+  const night=!/^Jour/.test($("lgPhase").textContent);
+  const apply=v=>{if(lg.tok!==t)return;
     if(v.startsWith("p:")){const p=(o.pick||[]).find(x=>x.name===v.slice(2));if(p)o.onPick(p)}
-    else{const b=(o.btns||[])[+v.slice(2)];if(b)b[1]()}
-  });
+    else if(v.startsWith("b:")){const b=(o.btns||[])[+v.slice(2)];if(b)b[1]()}};
+  const ask=note=>{lgQ=remoteAsk(ids,{title:$("lgPhase").textContent,text,big:o.big||"",note:note||o.note||"",options:opts,quiet:true},(id,v)=>{
+    if(!(wolves&&ids.length>1&&o.pick&&v.startsWith("p:")))return apply(v);
+    /* vote de la meute : majorité stricte, sinon on revote */
+    const a=host.asks[lgQ];if(!a)return;const vals=Object.values(a.answered).filter(x=>x.startsWith("p:"));
+    $("lgNote").textContent=`📱 ${vals.length}/${ids.length} loups ont choisi.`;
+    if(vals.length<ids.length)return;
+    const cnt={};vals.forEach(x=>cnt[x]=(cnt[x]||0)+1);const top=Object.entries(cnt).sort((x,y)=>y[1]-x[1])[0];
+    if(top[1]>ids.length/2)return apply(top[0]);
+    const tally=Object.entries(cnt).map(([k,n])=>`${k.slice(2)} (${n})`).join(", ");
+    remoteClear(lgQ);ask(`Pas d'accord : ${tally}. Mettez-vous d'accord et revotez.`);
+  },{decoy:night})};
+  ask();
   if(lgQ){$("lgNote").hidden=false;$("lgNote").textContent=(o.note&&!lg.auto?o.note+" · ":"")+(lg.auto?"📱 Le joueur concerné répond sur son téléphone.":phoneNote);
     if(lg.auto){$("lgBig").hidden=true;if(o.big)$("lgPick").innerHTML=""}}
 };
 
 /* ---- vote sur les téléphones (Loup-garou, Undercover) ---- */
-let voteQ=null,voteCtx=null;
+let voteCtx=null;
 function phoneVote({candidates,voters,bonus,back,onResult}){
   const ids=onlineIds(voters);
-  voteCtx={candidates,tally:Object.fromEntries(candidates.map(p=>[p.name,(bonus&&bonus[p.name])||0])),who:{},ids,back,onResult,voters};
-  voteQ=remoteAsk(ids,{title:"Vote",text:"Qui veux-tu éliminer ?",options:candidates.map(p=>({v:p.name,label:p.name})),excludeSelf:true},(id,v)=>{
-    if(voteCtx.who[id])voteCtx.tally[voteCtx.who[id]]--;voteCtx.who[id]=v;voteCtx.tally[v]=(voteCtx.tally[v]||0)+1;voteRender()});
+  voteCtx={candidates,tally:Object.fromEntries(candidates.map(p=>[p.name,(bonus&&bonus[p.name])||0])),who:{},ids,back,onResult,voters,
+    allPhones:ids.length>=voters.length};
+  voteCtx.qid=remoteAsk(ids,{title:"Vote",text:"Qui veux-tu éliminer ?",options:candidates.map(p=>({v:p.name,label:p.name})),excludeSelf:true},(id,v)=>{
+    const c=voteCtx;if(!c||!c.candidates.some(p=>p.name===v))return;if(c.who[id])c.tally[c.who[id]]--;c.who[id]=v;c.tally[v]=(c.tally[v]||0)+1;voteRender()},
+    {targets:voters.map(p=>p.name)});
   const prevTheme=document.body.dataset.game;show("vote");setTheme(prevTheme);voteRender();
 }
 function voteRender(){
@@ -2283,20 +2280,20 @@ function voteRender(){
   const box=$("voteList");box.innerHTML="";
   const max=Math.max(1,...Object.values(c.tally));
   c.candidates.forEach(p=>{const r=el("div","gbar");r.append(el("span","rk",String(c.tally[p.name]||0)),el("span","nm",pn(p.name)));
-    const plus=el("button","ghost","+1");plus.type="button";plus.style.padding="4px 10px";plus.onclick=()=>{c.tally[p.name]++;voteRender()};r.appendChild(plus);
+    const plus=el("button","ghost","+1");plus.type="button";plus.style.padding="4px 10px";plus.onclick=()=>{c.tally[p.name]++;c.manual=(c.manual||0)+1;voteRender()};r.appendChild(plus);
     const tr=el("div","tr");const bar=el("i");bar.style.width=((c.tally[p.name]||0)/max*100)+"%";tr.appendChild(bar);r.appendChild(tr);box.appendChild(r)});
-  const n=Object.keys(c.who).length;
-  $("voteStatus").textContent=`${n} / ${c.ids.length} téléphones ont voté. Utilisez +1 pour ceux qui n'ont pas de téléphone connecté.`;
-  if(c.ids.length&&n>=c.ids.length&&!c.autoClosed){c.autoClosed=true;setTimeout(voteClose,700)}
+  const n=Object.keys(c.who).length,missing=c.voters.length-c.ids.length;
+  $("voteStatus").textContent=`${n} / ${c.ids.length} téléphones ont voté.`+(missing>0?` ${missing} joueur${missing>1?"s":""} sans téléphone : ajoutez leur vote avec +1, puis « Clore le vote ».`:"");
+  if(c.allPhones&&c.ids.length&&n>=c.ids.length&&!c.autoClosed){c.autoClosed=true;setTimeout(voteClose,900)}
 }
 function voteClose(){
-  const c=voteCtx;if(!c)return;remoteClear(voteQ);voteQ=null;voteCtx=null;
+  const c=voteCtx;if(!c)return;remoteClear(c.qid);voteCtx=null;
   const arr=Object.entries(c.tally).sort((a,b)=>b[1]-a[1]);
   const top=arr[0],tied=arr.filter(x=>x[1]===top[1]);
   c.onResult(top[1]>0&&tied.length===1?c.candidates.find(p=>p.name===top[0]):null,tied.map(x=>x[0]),top[1]);
 }
 $("voteClose").onclick=voteClose;
-$("voteCancel").onclick=()=>{const c=voteCtx;remoteClear(voteQ);voteQ=null;voteCtx=null;if(c)c.back()};
+$("voteCancel").onclick=()=>{const c=voteCtx;if(c)remoteClear(c.qid);voteCtx=null;if(c)c.back()};
 
 const _lgVote=lgVote;
 lgVote=function(){
@@ -2321,7 +2318,7 @@ $("ucVote").onclick=()=>{
 const _ucTurn=ucTurn;ucTurn=function(){_ucTurn();$("ucVote").hidden=!host||!onlineIds(game.players.filter(p=>p.alive)).length};
 const _yes=$("yes").onclick;$("yes").onclick=()=>{if(game.pending==null){$("confirm").hidden=true;return}_yes()};
 
-/* ---- Blind test : buzzer ---- */
+/* ---- Blind test : buzzer synchronisé (horloge de chaque téléphone recalée) ---- */
 let btQ=null;
 const _btNext=btNext;
 btNext=function(){
@@ -2329,17 +2326,19 @@ btNext=function(){
   _btNext();
   if(!host)return;
   const hummer=bt.curMode==="hum"?names[bt.i%names.length]:null;
-  const ids=onlineIds(names.filter(n=>n!==hummer));if(!ids.length)return;
-  const round=bt.round;
-  btQ=remoteAsk(ids,{title:"Blind test",text:"Buzz dès que tu as trouvé !",kind:"buzz",options:[{v:"buzz",label:"BUZZ"}]},(id)=>{
-    if(bt.round!==round||bt.buzzed)return;bt.buzzed=host.players[id].name;
-    const ban=el("p","drink pop","🔔 "+bt.buzzed+" a buzzé en premier !");$("btHead").appendChild(ban);try{btAudio.pause()}catch(e){}
-    remoteClear(btQ);btQ=null;
-  });
-  bt.buzzed=null;
+  const others=names.filter(n=>n!==hummer);const ids=onlineIds(others);if(!ids.length)return;
+  const round=bt.round;let buzzes=[],timer=null;bt.buzzed=null;
+  btQ=remoteAsk(ids,{title:"Blind test",text:"Buzz dès que tu as trouvé !",kind:"buzz",options:[{v:"buzz",label:"BUZZ"}]},(id,v,d)=>{
+    if(bt.round!==round||bt.buzzed)return;
+    const p=host.players[id];const at=d&&d.tp&&p.off!=null?d.tp-p.off:Date.now();
+    buzzes.push({id,at});
+    if(!timer)timer=setTimeout(()=>{if(bt.round!==round)return;buzzes.sort((a,b)=>a.at-b.at);const w=host.players[buzzes[0].id];bt.buzzed=w.name;
+      const ban=el("p","drink pop","🔔 "+w.name+" a buzzé en premier !"+(buzzes.length>1?` (devant ${buzzes.slice(1).map(b=>host.players[b.id].name).join(", ")})`:""));
+      $("btHead").appendChild(ban);try{btAudio.pause()}catch(e){}remoteClear(btQ);btQ=null},450);
+  },{targets:others});
 };
 
-/* ---- Je n'ai jamais : réponses sur les téléphones ---- */
+/* ---- Je n'ai jamais ---- */
 let jnQ=null;
 const _jnNext=jnNext;
 jnNext=function(){
@@ -2349,45 +2348,154 @@ jnNext=function(){
   const done=[],never=[];const box=$("jnAnswers");box.hidden=false;
   const draw=()=>{box.innerHTML="";box.append(el("div","label",`Déjà fait (${done.length})`),el("p",null,done.join(", ")||"—"),el("div","label",`Jamais (${never.length})`),el("p",null,never.join(", ")||"—"))};draw();
   jnQ=remoteAsk(ids,{title:"Je n'ai jamais",text:$("jnTxt").textContent,options:[{v:"y",label:"Je l'ai déjà fait 🍺"},{v:"n",label:"Jamais 😇"}]},(id,v)=>{
-    const n=host.players[id].name;[done,never].forEach(a=>{const i=a.indexOf(n);if(i>=0)a.splice(i,1)});(v==="y"?done:never).push(n);draw()});
+    const n=host.players[id].name;[done,never].forEach(a=>{const i=a.indexOf(n);if(i>=0)a.splice(i,1)});(v==="y"?done:never).push(n);draw()},{targets:[...names]});
 };
 
-/* ---- Action ou Vérité : la carte arrive sur le téléphone du joueur ---- */
+/* ---- Action ou Vérité ---- */
 let avQ=null;
 const _avShow=avShow;
 avShow=function(kind){
   _avShow(kind);if(!host)return;if(avQ){remoteClear(avQ);avQ=null}
-  const ids=onlineIds([names[av.i%names.length]]);if(!ids.length)return;
-  avQ=remoteAsk(ids,{title:kind==="a"?"Action":"Vérité",text:$("avTxt").textContent,options:[{v:"ok",label:"Fait ✓"},{v:"no",label:"Je refuse"}]},(id,v)=>{avQ=null;(v==="ok"?$("avDone"):$("avSkip")).click()});
+  const who=names[av.i%names.length];const ids=onlineIds([who]);if(!ids.length)return;
+  avQ=remoteAsk(ids,{title:kind==="a"?"Action":"Vérité",text:$("avTxt").textContent,options:[{v:"ok",label:"Fait ✓"},{v:"no",label:"Je refuse"}]},(id,v)=>{remoteClear(avQ);avQ=null;(v==="ok"?$("avDone"):$("avSkip")).click()},{targets:[who]});
 };
 const _avTurn=avTurn;avTurn=function(){if(avQ){remoteClear(avQ);avQ=null}_avTurn()};
 const _startGage=startGage;startGage=function(level){
   if(avQ){remoteClear(avQ);avQ=null}
   _startGage(level);if(!host)return;
-  const ids=onlineIds([names[av.i%names.length]]);if(!ids.length)return;
+  const who=names[av.i%names.length];const ids=onlineIds([who]);if(!ids.length)return;
   setTimeout(()=>{if($("avGage").hidden||av.level!==level)return;
     const opts=[{v:"ok",label:"Fait ✓"}];if(level<3)opts.push({v:"no",label:"Je refuse encore"});
-    avQ=remoteAsk(ids,{title:GAGE_LBL[level],text:$("gageTxt").textContent,options:opts},(id,v)=>{avQ=null;(v==="ok"?$("gageDone"):$("gageNo")).click()})},2900);
+    avQ=remoteAsk(ids,{title:GAGE_LBL[level],text:$("gageTxt").textContent,options:opts},(id,v)=>{remoteClear(avQ);avQ=null;(v==="ok"?$("gageDone"):$("gageNo")).click()},{targets:[who]})},2900);
 };
 $("avSkip").onclick=()=>startGage(1);$("gageNo").onclick=()=>startGage(av.level+1);
 const _gageDone=$("gageDone").onclick;$("gageDone").onclick=()=>{if(avQ){remoteClear(avQ);avQ=null}_gageDone()};
 
 /* nettoyage en quittant un écran de jeu */
 const _show=show;
-show=function(id){if(host){if(id!=="bt-play"&&btQ){remoteClear(btQ);btQ=null}if(id==="home")remoteClearAll()}_show(id)};
+show=function(id){
+  if(host){const keep=["vote","remote","pass"].includes(id);
+    if(id!=="bt-play"&&btQ){remoteClear(btQ);btQ=null}
+    if(!keep&&id!=="lg-mj"&&lgQ){remoteClear(lgQ);lgQ=null}
+    if(!keep&&id!=="jn-play"&&jnQ){remoteClear(jnQ);jnQ=null}
+    if(!keep&&id!=="av-play"&&avQ){remoteClear(avQ);avQ=null}
+    if(id==="home")remoteClearAll()}
+  _show(id)};
 
-/* ---- côté joueur : afficher la question ---- */
-let myAsk=null;
+/* ================= JOUEUR ================= */
+let mySecret=null,myAsk=null;
+function joinRender(){
+  const joined=!!(guest&&guest.ok);
+  $("joinForm").hidden=joined;$("joinWait").hidden=!joined;
+  if(!joined)return;
+  $("joinHello").textContent=pn(guest.name);
+  if(!mySecret){$("mySecret").hidden=true;$("mySeen").hidden=true;$("myAgain").hidden=true;if(!myAsk)$("joinHint").hidden=false;return}
+}
+function showMySecret(cover){
+  const s=$("mySecret");s.hidden=false;$("myAgain").hidden=true;
+  if(cover){s.className="secret";s.disabled=false;s.innerHTML="";s.append(el("span",null,"Nouveau rôle ! Touche pour le voir"),el("small",null,"Cache bien ton écran"));$("mySeen").hidden=true}
+}
+$("mySecret").onclick=()=>{if(!mySecret)return;const s=$("mySecret");s.className="secret open";s.disabled=true;s.innerHTML="";
+  if(mySecret.card&&LG_CARD[mySecret.card])showCardIn(s,mySecret.card);else s.append(el("small",null,mySecret.kicker),el("div","word",mySecret.word),el("small",null,mySecret.note));$("mySeen").hidden=false;try{navigator.vibrate?.(80)}catch(e){}};
+$("mySeen").onclick=()=>{if(guest&&guest.ch&&mySecret&&!mySecret.acked){guest.ch.send({type:"broadcast",event:"ack",payload:{id:myId}});mySecret.acked=true}
+  $("mySecret").hidden=true;$("mySeen").hidden=true;$("myAgain").hidden=false;$("joinHint").hidden=!!myAsk;$("joinHint").textContent="C'est noté. Garde ce téléphone sous la main : les votes et les actions arriveront ici."};
+$("myAgain").onclick=()=>{showMySecret(true);$("mySecret").click()};
+function myMeta(){const p=prof(guest.name);return {role:"player",id:myId,name:guest.name,e:p.e,c:p.c,pk:enc.pub}}
+function guestAnnounce(){if(!guest||!guest.ch||!guest.ok)return;try{guest.ch.track(myMeta());guest.ch.send({type:"broadcast",event:"hello",payload:myMeta()})}catch(e){}}
+async function guestOpen(payload){if(payload.to!==myId)return null;try{return await unseal(payload.hpk,payload.box)}catch(e){return null}}
+async function joinGo(){
+  if(!guest)return;if(guest.joining||guest.ok)return;
+  const name=$("joinName").value.trim();const err=$("joinErr");
+  if(!name){err.textContent="Écris ton prénom pour rejoindre.";err.hidden=false;return}
+  if(!sbc()){err.textContent="Pas de connexion internet. Vérifie ton réseau et réessaie.";err.hidden=false;return}
+  err.hidden=true;store.set("zb_guest_name",name);guest.joining=true;
+  await cryptoInit();
+  const code=guest.code;
+  const ch=sb.channel("zbeul:"+code,{config:{broadcast:{self:false},presence:{key:myId}}});
+  guest={code,ch,name,ok:false,joining:true};
+  ch.on("broadcast",{event:"secret"},async({payload})=>{const d=await guestOpen(payload);if(!d)return;guest.hpk=payload.hpk;
+    if(mySecret&&mySecret.ts===d.ts){if(mySecret.acked)ch.send({type:"broadcast",event:"ack",payload:{id:myId}});return}
+    mySecret=d;if(d.game&&THEMES[d.game])setTheme(d.game);joinRender();showMySecret(true);$("joinHint").hidden=true;try{navigator.vibrate?.([60,60,60])}catch(e){}});
+  ch.on("broadcast",{event:"ask"},async({payload})=>{const d=await guestOpen(payload);if(!d)return;guest.hpk=payload.hpk;
+    if(d.decoy){setTimeout(()=>guestAnswer(d.qid,"x",true),1500+Math.random()*4000);return}
+    if(myAsk&&myAsk.qid===d.qid)return;
+    myAsk=d;if(d.game&&THEMES[d.game])setTheme(d.game);$("joinHint").hidden=true;renderMyAsk();if(!d.quiet){try{navigator.vibrate?.(60)}catch(e){}}});
+  ch.on("broadcast",{event:"rename"},async({payload})=>{const d=await guestOpen(payload);if(!d)return;guest.name=d.name;store.set("zb_guest_name",d.name);joinRender();renderMyAsk()});
+  ch.on("broadcast",{event:"ping"},({payload})=>{if(payload.to===myId)ch.send({type:"broadcast",event:"pong",payload:{id:myId,t0:payload.t0,tp:Date.now()}})});
+  ch.on("broadcast",{event:"clear"},({payload})=>{if(myAsk&&myAsk.qid===payload.qid){myAsk=null;renderMyAsk();if(!mySecret||mySecret.acked)$("joinHint").hidden=false}});
+  ch.on("broadcast",{event:"lobby"},({payload})=>{if(!myAsk){$("joinHint").hidden=false;$("joinHint").textContent=payload.text}});
+  ch.on("broadcast",{event:"closed"},()=>{guest.closed=true;$("joinStatus").textContent="L'hôte a fermé la partie";$("joinHint").hidden=false;$("joinHint").textContent="Tu peux quitter la partie, ou attendre qu'il en recrée une.";myAsk=null;renderMyAsk()});
+  ch.on("presence",{event:"sync"},()=>{if(guest.closed)return;const hostOn=Object.values(ch.presenceState()).flat().some(m=>m.role==="host");$("joinStatus").textContent=hostOn?`Connecté à la partie ${code}`:`Partie ${code} · en attente de l'hôte…`});
+  ch.subscribe(st=>{
+    if(st==="SUBSCRIBED"){guest.ok=true;guest.joining=false;guestAnnounce();joinRender();lockScreen()}
+    else if(st==="CHANNEL_ERROR"||st==="TIMED_OUT"){$("joinStatus").textContent="Connexion perdue, reconnexion…";if(!guest.ok){guest.joining=false}}});
+}
+async function guestAnswer(qid,v,decoy){if(!guest||!guest.ch||!guest.hpk)return;
+  try{const box=await seal(guest.hpk,{v,tp:Date.now()});guest.ch.send({type:"broadcast",event:"answer",payload:{qid,id:myId,ppk:enc.pub,box}})}catch(e){}}
 function renderMyAsk(){
   const box=$("myAsk");if(!myAsk){box.hidden=true;return}
   box.hidden=false;$("askTitle").textContent=myAsk.title||"";$("askText").textContent=myAsk.text||"";
   $("askBig").hidden=!myAsk.big;$("askBig").textContent=myAsk.big||"";$("askNote").hidden=!myAsk.note;$("askNote").textContent=myAsk.note||"";
   const o=$("askOpts");o.innerHTML="";$("askDone").hidden=!myAsk.sent;
-  if(myAsk.kind==="buzz"){const b=el("button","buzz","BUZZ");b.type="button";b.disabled=!!myAsk.sent;b.onclick=()=>answer("buzz",b);o.appendChild(b);return}
-  myAsk.options.forEach(op=>{if(myAsk.excludeSelf&&op.v===guest.name)return;const b=el("button",op.v.startsWith("b:")||myAsk.options.length<=2?"btn":"chip",op.label);b.type="button";
-    if(myAsk.sent===op.v)b.classList.add("on");b.onclick=()=>answer(op.v,b);o.appendChild(b)});
+  if(myAsk.kind==="buzz"){const b=el("button","buzz","BUZZ");b.type="button";b.disabled=!!myAsk.sent;b.onclick=()=>answer("buzz");o.appendChild(b);return}
+  (myAsk.options||[]).forEach(op=>{if(myAsk.excludeSelf&&guest&&op.v.toLowerCase()===String(guest.name).toLowerCase())return;
+    const b=el("button",op.v.startsWith("b:")||myAsk.options.length<=2?"btn":"chip",op.label);b.type="button";
+    if(myAsk.sent===op.v)b.classList.add("on");b.onclick=()=>answer(op.v);o.appendChild(b)});
 }
-function answer(v){if(!guest||!myAsk)return;guest.ch.send({type:"broadcast",event:"answer",payload:{qid:myAsk.qid,id:myId,v}});myAsk.sent=v;try{navigator.vibrate?.(30)}catch(e){}renderMyAsk()}
+function answer(v){if(!guest||!myAsk)return;guestAnswer(myAsk.qid,v);myAsk.sent=v;try{navigator.vibrate?.(30)}catch(e){}renderMyAsk()}
+$("joinGo").onclick=()=>joinGo();
+$("joinName").addEventListener("keydown",e=>{if(e.key==="Enter")joinGo()});
+$("joinAv").onclick=()=>{const n=$("joinName").value.trim()||"moi";const p=prof(n);p.e=EMOJIS[(EMOJIS.indexOf(p.e)+1)%EMOJIS.length];store.set("profiles",profiles);$("joinAv").textContent=p.e};
+$("joinName").addEventListener("input",()=>{const p=prof($("joinName").value.trim()||"moi");$("joinAv").textContent=p.e;$("joinAv").style.setProperty("--pc",p.c)});
+$("joinLeave").onclick=()=>{document.body.dataset.guest="";try{sessionStorage.removeItem("zb_room")}catch(e){}try{sb.removeChannel(guest.ch)}catch(e){}guest=null;mySecret=null;myAsk=null;window.history.replaceState(null,"",location.pathname);show("home")};
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState!=="visible")return;
+  if(guest&&guest.ok)guestAnnounce();
+  if(host){lockScreen();try{host.ch.track({role:"host",id:myId,pk:enc.pub})}catch(e){}}});
+addEventListener("online",()=>{if(guest&&guest.ok)setTimeout(guestAnnounce,1500)});
+function alertBox(t){const e=$("homeErr");e.textContent=t;e.hidden=false}
+function startJoin(code){
+  code=String(code||"").toUpperCase().replace(/[^A-Z]/g,"").slice(0,4);if(code.length!==4)return false;
+  if(guest&&guest.ch){try{sb.removeChannel(guest.ch)}catch(e){}}
+  guest={code,ok:false};mySecret=null;myAsk=null;$("joinCode").textContent=code;document.body.dataset.guest="1";
+  const n=store.get("zb_guest_name","");$("joinName").value=n;const p=prof(n||"moi");$("joinAv").textContent=p.e;$("joinAv").style.setProperty("--pc",p.c);
+  joinRender();renderMyAsk();show("join");document.getElementById("intro").hidden=true;
+  try{window.history.replaceState(null,"","?room="+code);sessionStorage.setItem("zb_room",code)}catch(e){}
+  if(n)setTimeout(joinGo,50);
+  return true;
+}
+(function boot(){
+  const m=/[?&]room=([A-Za-z]{4})/.exec(location.search);let c=m&&m[1];
+  if(!c){try{c=sessionStorage.getItem("zb_room")}catch(e){}}
+  if(c)return setTimeout(()=>startJoin(c),0);
+  const h=store.get("zb_host",null);
+  if(h&&h.code&&Date.now()-h.t<12*3600e3){const tryResume=()=>window.supabase?multiCreate(h.code,true):setTimeout(tryResume,200);setTimeout(tryResume,0)}
+})();
+$("joinCodeGo").onclick=()=>{const v=$("joinCodeIn").value;if(!startJoin(v)){$("joinCodeErr").textContent="Le code fait 4 lettres, par exemple KRBZ.";$("joinCodeErr").hidden=false}};
+$("joinCodeIn").addEventListener("keydown",e=>{if(e.key==="Enter")$("joinCodeGo").click()});
+$("joinCodeIn").addEventListener("input",e=>{e.target.value=e.target.value.toUpperCase().replace(/[^A-Z]/g,"")});
+/* scanner de QR intégré */
+let scanStream=null,scanRaf=0;
+function loadJsQR(){return window.jsQR?Promise.resolve():new Promise((ok,ko)=>{const sc=document.createElement("script");sc.src="lib/jsqr.js";sc.onload=ok;sc.onerror=ko;document.head.appendChild(sc)})}
+function scanStop(){cancelAnimationFrame(scanRaf);if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null}$("scanner").hidden=true}
+function codeFromText(t){const m=/[?&]room=([A-Za-z]{4})/.exec(t)||/^([A-Za-z]{4})$/.exec(t.trim());return m?m[1]:null}
+async function scanStart(){
+  const err=$("joinCodeErr");err.hidden=true;
+  try{scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false})}
+  catch(e){err.textContent="Impossible d'ouvrir la caméra. Autorise l'appareil photo, ou tape le code.";err.hidden=false;return}
+  $("scanner").hidden=false;const v=$("scanVideo");v.srcObject=scanStream;v.setAttribute("playsinline","");await v.play().catch(()=>{});
+  const det=("BarcodeDetector" in window)?new BarcodeDetector({formats:["qr_code"]}):null;
+  if(!det)await loadJsQR().catch(()=>{});
+  const cv=document.createElement("canvas"),cx=cv.getContext("2d",{willReadFrequently:true});
+  const tick=async()=>{
+    if(!scanStream)return;
+    if(v.readyState>=2){let txt=null;
+      try{if(det){const r=await det.detect(v);if(r[0])txt=r[0].rawValue}
+        else if(window.jsQR){const w=v.videoWidth,h=v.videoHeight,sc=Math.min(1,640/w);cv.width=w*sc;cv.height=h*sc;cx.drawImage(v,0,0,cv.width,cv.height);const r=jsQR(cx.getImageData(0,0,cv.width,cv.height).data,cv.width,cv.height);if(r)txt=r.data}}catch(e){}
+      const code=txt&&codeFromText(txt);
+      if(code){try{navigator.vibrate?.(80)}catch(e){}scanStop();startJoin(code);return}}
+    scanRaf=requestAnimationFrame(tick)};tick();
+}
+$("scanBtn").onclick=scanStart;$("scanClose").onclick=scanStop;
 
 setTheme("home");renderPlayers();
 {const h=location.hash.slice(1);if(h&&document.getElementById(h)&&/-setup$/.test(h))show(h)}

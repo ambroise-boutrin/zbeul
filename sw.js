@@ -1,4 +1,4 @@
-const VERSION="zbeul-v11";
+const VERSION="zbeul-v12";
 const CORE=["./","index.html","voice.js","lib/supabase.js","lib/qrcode.js","manifest.webmanifest",
  "fonts/dela.woff2","fonts/archivo.woff2","fonts/specialelite.woff2","fonts/cinzel.woff2","fonts/bungee.woff2","fonts/righteous.woff2","fonts/alfaslab.woff2",
  "icons/icon-192.png","icons/icon-512.png","icons/maskable-512.png","icons/apple-touch-icon.png","icons/favicon-32.png","icons/logo-256.png","lib/jsqr.js"];
@@ -12,5 +12,10 @@ self.addEventListener("fetch",e=>{
     e.respondWith(fetch(req).then(r=>{const c=r.clone();caches.open(VERSION).then(x=>x.put("index.html",c));return r}).catch(()=>caches.match("index.html")));
     return;
   }
-  e.respondWith(caches.match(req,{ignoreSearch:true}).then(hit=>hit||fetch(req).then(r=>{if(r.ok){const c=r.clone();caches.open(VERSION).then(x=>x.put(req,c))}return r})));
+  /* stale-while-revalidate : réponse immédiate depuis le cache, mise à jour en arrière-plan */
+  e.respondWith(caches.open(VERSION).then(cache=>cache.match(req,{ignoreSearch:true}).then(hit=>{
+    const net=fetch(req).then(r=>{if(r.ok)cache.put(req,r.clone());return r}).catch(()=>hit);
+    if(hit){e.waitUntil(net);return hit}
+    return net;
+  })));
 });
