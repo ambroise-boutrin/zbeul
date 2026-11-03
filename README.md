@@ -2,7 +2,7 @@
 
 Les jeux de soirée qui mettent le zbeul, sur un seul téléphone ou sur tous les téléphones de la bande.
 
-**Jeux :** Undercover (équipes possibles), Loup-garou (18 rôles, narrateur IA avec bruitages), Dans ta tête (mode inclinaison), Action ou Vérité (gages en cascade), Je n'ai jamais, Blind test (extraits Deezer).
+**Jeux :** Undercover (équipes possibles), Loup-garou (18 rôles, narrateur IA avec bruitages), Dans ta tête (mode inclinaison), Action ou Vérité (gages en cascade), Je n'ai jamais, Blind test (extraits Deezer), Qui de nous ? (vote secret), Mot commun, Le menteur, Échelle (chiffre secret et curseur), Bombe à mots (minuteur caché).
 
 **Autour :** profils joueurs, classement et titres de la soirée, historique, mode tournoi avec traître secret, cartes perso, mode gorgées.
 
@@ -13,7 +13,8 @@ L'hôte crée une partie sur l'accueil (code + QR code). Chacun rejoint avec `?r
 - **Undercover** : vote sur les téléphones.
 - **Blind test** : buzzer sur chaque téléphone.
 - **Je n'ai jamais** : chacun répond « déjà fait » / « jamais », l'hôte voit qui.
-- **Action ou Vérité** : la carte arrive sur le téléphone du joueur concerné. Temps réel via Supabase Realtime (canaux `zbeul:CODE`, broadcast + presence, aucune table).
+- **Action ou Vérité** : la carte arrive sur le téléphone du joueur concerné.
+- **Qui de nous ?, Mot commun, Le menteur, Échelle** : chacun répond en secret sur son téléphone (vote, mot, curseur) ; ceux qui n'en ont pas répondent sur le tel de l'hôte. Ces cinq jeux sont dans `jeux.js`. Temps réel via Supabase Realtime (canaux `zbeul:CODE`, broadcast + presence, aucune table).
 
 **Fiabilité :** identité permanente par téléphone, présence réannoncée au retour de veille, ping toutes les 15 s, renvoi automatique des rôles et questions en attente, reprise de la salle si l'hôte recharge l'appli (12 h), retardataires ajoutés aux votes en cours.
 
