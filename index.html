@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>ZBEUL</title>
-<meta name="description" content="Jeux de soirée sur un seul téléphone : Undercover, Loup-garou, Dans ta tête, Action ou Vérité, Je n'ai jamais.">
+<meta name="description" content="Jeux de soirée sur un téléphone, un ordinateur ou tous les téléphones de la bande : Undercover, Loup-garou, Dans ta tête, Action ou Vérité, Je n'ai jamais, Blind test.">
 <meta name="theme-color" content="#FFE14D">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/favicon-32.png" sizes="32x32">
@@ -192,7 +192,7 @@ button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 .tile[data-g=dt] .t{font-family:"Bungee",sans-serif}
 .tile[data-g=av]{background:#2A0618;color:#FFE3F1;transform:rotate(-1deg);border-color:#FF1F7A;box-shadow:0 0 0 1px #FF1F7A,0 0 22px rgba(255,31,122,.6)}
 .tile[data-g=av] .t{font-family:"Righteous",sans-serif;text-shadow:0 0 10px #FF1F7A,0 0 22px #FF1F7A}
-.tile[data-g=jn]{background:#0F3B2E;color:#F6E7C1;box-shadow:5px 5px 0 #E09F3E;background-image:radial-gradient(circle at 90% 50%,#E09F3E 0 26px,#F6E7C1 27px 34px,transparent 35px)}
+.tile[data-g=jn]{background:#0F3B2E;color:#F6E7C1;box-shadow:5px 5px 0 #E09F3E;background-image:radial-gradient(circle at calc(100% - 28px) calc(100% - 26px),#E09F3E 0 14px,#F6E7C1 15px 20px,transparent 21px)}
 .tile[data-g=jn] .t{font-family:"Alfa Slab One",serif}
 
 /* ---------- UNDERCOVER : dossier classifié ---------- */
@@ -493,6 +493,45 @@ header{justify-content:flex-start}
 header .tag{margin-left:auto}
 .logoimg{width:58px;height:58px;border-radius:16px;border:3px solid var(--ink);box-shadow:3px 3px 0 var(--pink);transform:rotate(-4deg);flex:none}
 body:not([data-game=home]) .logoimg{display:none}
+/* ===== DESKTOP : version ordinateur (mobile inchangé) ===== */
+.hcol{display:contents}
+#joinCodeIn{flex:0 0 132px;width:132px;min-width:0;font-size:20px!important;letter-spacing:.14em!important;padding-inline:8px}
+.kbd,.kbdonly{display:none}
+@media (hover:hover) and (pointer:fine){
+  .btn,.chip,.ghost,.back,.tile,.toggle,.seg button,.x,.avb{cursor:pointer}
+  .btn:not(:disabled):hover,.ghost:not(:disabled):hover,.back:hover{filter:brightness(1.06)}
+  .chip:not(:disabled):hover{transform:translateY(-1px)}
+  .kbd{display:block;margin:0;text-align:center;font-size:13px;opacity:.75;color:inherit}
+  .kbdonly{display:block}
+  .kbd kbd{font:700 12px/1 var(--body);display:inline-block;min-width:22px;padding:4px 6px;margin:0 2px;border:2px solid currentColor;border-bottom-width:3px;border-radius:6px;text-align:center}
+  body.notouch .touchonly{display:none!important}
+}
+@media (min-width:900px){
+  body{padding-block:28px 56px}
+  .wrap{max-width:760px}
+  body[data-scr=home] .wrap{max-width:1180px}
+  .chips{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+  .titles{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+  .big{font-size:56px}
+  .cardtxt{font-size:34px}
+  .secret{min-height:260px}
+  .dtword{min-height:380px}
+  .dtword .w{font-size:clamp(56px,7vw,104px)}
+  .dtbtns .btn{min-height:96px}
+  #jn-play .card{min-height:380px!important}
+  .qr{width:190px;height:190px}
+  /* accueil sur deux colonnes : jeux à gauche, équipe et multi à droite */
+  #home{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:24px;align-items:start}
+  #home>.ticker{grid-column:1/-1}
+  #home>.hcol{display:flex;flex-direction:column;gap:18px;min-width:0}
+  #tiles{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  #tiles>.tile{grid-column:auto!important;min-height:180px}
+  #tiles .tile .t{font-size:24px}
+  #tiles .tile .d{font-size:14px}
+}
+@media (min-width:900px) and (max-height:760px){
+  .dtword{min-height:300px}
+}
 </style>
 
 <div id="fx" aria-hidden="true"></div>
@@ -506,6 +545,7 @@ body:not([data-game=home]) .logoimg{display:none}
   <!-- HOME -->
   <section id="home" class="scr">
     <div class="ticker" aria-hidden="true"><div><span>UNDERCOVER ✦</span><span>LOUP-GAROU ✦</span><span>DANS TA TÊTE ✦</span><span>ACTION OU VÉRITÉ ✦</span><span>JE N'AI JAMAIS ✦</span><span>BLIND TEST ✦</span><span>UNDERCOVER ✦</span><span>LOUP-GAROU ✦</span><span>DANS TA TÊTE ✦</span><span>ACTION OU VÉRITÉ ✦</span><span>JE N'AI JAMAIS ✦</span><span>BLIND TEST ✦</span></div></div>
+    <div class="hcol hmain">
     <div class="card" id="tourResume" hidden><div class="row" style="justify-content:space-between;align-items:center"><div><b id="tourResumeTxt">Tournoi en cours</b><div class="hint">Reprends là où vous en étiez.</div></div></div><div class="row"><button class="btn" type="button" id="tourResumeGo">Reprendre</button><button class="btn alt" type="button" id="tourAbort">Abandonner</button></div></div>
     <div class="card" id="multiPick" hidden>
       <div class="label">Multi-téléphones</div>
@@ -522,6 +562,8 @@ body:not([data-game=home]) .logoimg{display:none}
       <button class="tile" type="button" data-g="bt" data-go="bt-setup"><span class="t">Blind test</span><span class="d">Les vraies musiques : dessins animés, séries, films, mangas, jeux vidéo, Disney.</span><span class="m">3+ joueurs</span></button>
     </div>
     <div class="homebtns"><button class="btn" type="button" data-go="glob">Classement<small>de la soirée</small></button><button class="btn blue" type="button" data-go="tour-setup">Tournoi<small>jeux au hasard</small></button><button class="btn mint" type="button" data-go="custom">Mes cartes<small>vos délires</small></button></div>
+    </div>
+    <div class="hcol hside">
     <div class="card" id="installCard" hidden>
       <div id="install"><div><b>Installe l'appli</b><div class="hint">Icône sur ton écran d'accueil, plein écran, marche sans réseau.</div></div><button class="btn mint" type="button" id="installBtn">Installer</button></div>
       <div id="iosHint" class="hint" hidden>Sur iPhone, dans Safari :<ol><li>Touche le bouton Partager (le carré avec la flèche).</li><li>Choisis « Sur l'écran d'accueil ».</li><li>Touche « Ajouter ».</li></ol></div>
@@ -552,6 +594,7 @@ body:not([data-game=home]) .logoimg{display:none}
       <button id="addP" class="ghost" type="button">+ Ajouter un joueur</button>
       <p id="homeErr" class="err" hidden></p>
     </div>
+    </div>
   </section>
 
   <!-- SHARED: PASS THE PHONE -->
@@ -564,6 +607,7 @@ body:not([data-game=home]) .logoimg{display:none}
       </div>
       <button id="secret" class="secret" type="button"></button>
       <button id="nextP" class="btn" type="button" hidden>J'ai capté, je cache</button>
+      <p class="kbd"><kbd>Espace</kbd> voir le secret, puis passer au suivant</p>
     </div>
   </section>
 
@@ -731,13 +775,14 @@ body:not([data-game=home]) .logoimg{display:none}
     <div class="card">
       <h2>Dans ta tête</h2>
       <p class="hint">Le joueur met le tel sur son front, écran vers les autres. Les autres lui font deviner le mot sans le dire. Appuyez sur Trouvé ou Passe.</p>
+      <p class="hint kbdonly">Sur ordi : celui qui devine tourne le dos à l'écran, les autres lui font deviner. Raccourcis : <b>→</b> ou <b>Espace</b> = trouvé, <b>←</b> = passe.</p>
       <div class="label">Qui devine ?</div>
       <div id="dtWho" class="chips"></div>
       <div class="label">Catégorie</div>
       <div id="dtCats" class="chips"></div>
       <div class="label">Durée</div>
       <div class="seg" id="dtDur"><button type="button" data-s="45">45 s</button><button type="button" data-s="60" aria-pressed="true">60 s</button><button type="button" data-s="90">90 s</button></div>
-      <div class="setting"><div><b>Mode inclinaison</b><small>Tel sur le front, en paysage : penche vers le bas = trouvé, vers le haut = passe. Marche dans l'appli installée.</small></div><button type="button" class="toggle" id="dtTilt" aria-pressed="true" aria-label="Mode inclinaison"></button></div>
+      <div class="setting touchonly"><div><b>Mode inclinaison</b><small>Tel sur le front, en paysage : penche vers le bas = trouvé, vers le haut = passe. Marche dans l'appli installée.</small></div><button type="button" class="toggle" id="dtTilt" aria-pressed="true" aria-label="Mode inclinaison"></button></div>
       <div class="setting"><div><b>Mode gorgées</b><small>1 gorgée par mot raté</small></div><button type="button" class="toggle" id="dtDrink" aria-pressed="false" aria-label="Mode gorgées"></button></div>
       <button id="dtStart" class="btn" type="button">C'est parti</button>
     </div>
@@ -759,6 +804,7 @@ body:not([data-game=home]) .logoimg{display:none}
         <button class="btn mint" type="button" id="dtOk">Trouvé</button>
       </div>
       <p class="hint center" id="dtTiltHint" hidden style="color:inherit">L'inclinaison ne répond pas ici. Utilise les boutons, ou ouvre l'appli installée.</p>
+      <p class="kbd"><kbd>→</kbd> ou <kbd>Espace</kbd> trouvé · <kbd>←</kbd> passe · <kbd>Échap</kbd> arrêter</p>
       <button class="ghost" type="button" id="dtStop">Arrêter la manche</button>
     </div>
   </section>
@@ -814,6 +860,7 @@ body:not([data-game=home]) .logoimg{display:none}
         <div class="row"><button class="btn mint" type="button" id="gageDone">Fait, au suivant</button><button class="btn alt" type="button" id="gageNo">Je refuse encore</button></div>
       </div>
     </div>
+    <p class="kbd"><kbd>A</kbd> action · <kbd>V</kbd> vérité · <kbd>Entrée</kbd> fait · <kbd>R</kbd> je refuse</p>
   </section>
 
   <!-- JE N'AI JAMAIS -->
@@ -837,6 +884,7 @@ body:not([data-game=home]) .logoimg{display:none}
       <div id="jnAnswers" hidden style="display:flex;flex-direction:column;gap:4px;text-align:left"></div>
     </div>
     <button class="btn" type="button" id="jnNext">Carte suivante</button>
+    <p class="kbd"><kbd>Espace</kbd> carte suivante · <kbd>Échap</kbd> réglages</p>
   </section>
 
   <!-- GLOBAL SCORE -->
@@ -1079,7 +1127,7 @@ $("intro").onclick=()=>$("intro").hidden=true;
   add("av spot l");add("av spot r");
   for(let i=0;i<16;i++){const z=6+Math.random()*16;add("jn bub",{left:Math.random()*100+"%",width:z+"px",height:z+"px",animationDuration:(7+Math.random()*9)+"s",animationDelay:(-Math.random()*12)+"s"})}add("jn bar");
 })();
-function show(id){if(onLeave){onLeave();onLeave=null}const g=id.split("-")[0];if(THEMES[g])setTheme(g);else if(id!=="pass")setTheme("home");if(id==="glob")renderGlob();if(id==="tour-setup")renderTourSetup();if(id==="custom")renderCustom();if(id==="bt-setup")renderBtSetup();if(id!=="bt-play"){try{btAudio.pause()}catch(e){}}if(id==="glob"){renderTitles($("globTitles"));renderHistory($("globHist"))}if(typeof hush==="function"&&id!=="lg-mj"){hush();sfx.stopAll()}setTimeout(()=>typeof updateTourBtn==="function"&&updateTourBtn());SCREENS.forEach(s=>s.hidden=s.id!==id);window.scrollTo(0,0);if(id==="home")renderPlayers();if(id==="dt-setup")renderDtSetup();if(id==="lg-setup")renderLgSetup();if(id==="uc-setup")renderUcSetup()}
+function show(id){if(onLeave){onLeave();onLeave=null}const g=id.split("-")[0];if(THEMES[g])setTheme(g);else if(id!=="pass")setTheme("home");if(id==="glob")renderGlob();if(id==="tour-setup")renderTourSetup();if(id==="custom")renderCustom();if(id==="bt-setup")renderBtSetup();if(id!=="bt-play"){try{btAudio.pause()}catch(e){}}if(id==="glob"){renderTitles($("globTitles"));renderHistory($("globHist"))}if(typeof hush==="function"&&id!=="lg-mj"){hush();sfx.stopAll()}setTimeout(()=>typeof updateTourBtn==="function"&&updateTourBtn());SCREENS.forEach(s=>s.hidden=s.id!==id);document.body.dataset.scr=id;window.scrollTo(0,0);if(id==="home")renderPlayers();if(id==="dt-setup")renderDtSetup();if(id==="lg-setup")renderLgSetup();if(id==="uc-setup")renderUcSetup()}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-go]");if(!b)return;
   if(b.dataset.go!=="home"&&b.closest("#home")&&!validPlayers())return;show(b.dataset.go)});
 $("logo").onclick=()=>show("home");
@@ -2502,6 +2550,42 @@ setTheme("home");renderPlayers();
 
 
 /* ================= PWA ================= */
+/* ================= ORDINATEUR : clavier ================= */
+(function(){
+  const fine=matchMedia("(hover:hover) and (pointer:fine)").matches;
+  if(fine&&!("ontouchstart" in window)&&!(navigator.maxTouchPoints>0))document.body.classList.add("notouch");
+  if(!document.body.dataset.scr)document.body.dataset.scr=(SCREENS.find(s=>!s.hidden)||{}).id||"home";
+  const vis=id=>{const e=$(id);return !!(e&&!e.hidden&&!e.disabled&&e.offsetParent)};
+  const press=id=>{if(vis(id)){$(id).click();return true}return false};
+  const cur=()=>{const s=[...document.querySelectorAll("section.scr")].find(x=>!x.hidden);return s?s.id:""};
+  const START={"uc-setup":"ucStart","lg-setup":"lgStart","dt-setup":"dtStart","av-setup":"avStart","jn-setup":"jnStart","bt-setup":"btStart","tour-setup":"tourStart"};
+  document.addEventListener("keydown",e=>{
+    if(e.ctrlKey||e.metaKey||e.altKey||e.repeat)return;
+    const t=e.target;if(t&&(t.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)))return;
+    const k=e.key,sp=k===" "||k==="Spacebar",id=cur();let done=false;
+    if(k==="Escape"){
+      if(vis("scanner")){const c=$("scanner").querySelector("button");if(c){c.click();done=true}}
+      else if(id==="dt-play")done=press("dtStop");
+      else{const b=[...document.querySelectorAll("section.scr:not([hidden]) .back")].find(x=>x.offsetParent);if(b){b.click();done=true}}
+    }
+    else if(id==="pass"&&(sp||k==="Enter"))done=press("secret")||press("nextP");
+    else if(id==="dt-play"){
+      if(sp||k==="Enter"||k==="ArrowRight"||k==="ArrowDown")done=press("dtOk");
+      else if(k==="ArrowLeft"||k==="ArrowUp"||k==="Backspace")done=press("dtPass");
+    }
+    else if(id==="jn-play"&&(sp||k==="Enter"||k==="ArrowRight"))done=press("jnNext");
+    else if(id==="av-play"){
+      const l=k.toLowerCase();
+      if(l==="a")done=press("avA");
+      else if(l==="v")done=press("avV");
+      else if(k==="Enter"||sp)done=press("avDone")||press("gageDone");
+      else if(l==="r")done=press("avSkip")||press("gageNo");
+    }
+    else if(id==="dt-end"&&(k==="Enter"||sp))done=press("dtNext");
+    else if(START[id]&&k==="Enter")done=press(START[id]);
+    if(done){e.preventDefault();if(t&&t.tagName==="BUTTON"&&t.blur)t.blur()}
+  });
+})();
 (function(){
   if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
   const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone;

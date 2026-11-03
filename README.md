@@ -21,6 +21,18 @@ L'hôte crée une partie sur l'accueil (code + QR code). Chacun rejoint avec `?r
 
 **Serveur :** le projet Supabase est en offre gratuite (pause après 7 jours sans activité) ; l'appli fait une requête légère par jour pour le garder éveillé.
 
+## Sur ordinateur
+À partir de 900 px de large, l'accueil passe sur deux colonnes (jeux à gauche, équipe et multi à droite) et les écrans de jeu s'élargissent avec des textes plus gros. Sur mobile, rien ne change.
+
+Raccourcis clavier (désactivés quand on tape dans un champ) :
+- **Partout** : `Échap` revient en arrière, `Entrée` lance la partie depuis les réglages.
+- **Passe le tel** : `Espace` montre le secret, puis passe au suivant.
+- **Dans ta tête** : `→` ou `Espace` = trouvé, `←` = passe, `Échap` arrête la manche. Le joueur qui devine tourne le dos à l'écran.
+- **Action ou Vérité** : `A` action, `V` vérité, `Entrée` fait, `R` je refuse.
+- **Je n'ai jamais** : `Espace` carte suivante.
+
+Le mode inclinaison est masqué sur les appareils sans écran tactile.
+
 ## Stack
 Site 100 % statique, aucun build : `index.html`, `voice.js` (répliques du narrateur), `sw.js` (hors ligne), `manifest.webmanifest`, `lib/` (supabase-js 2.45.4, qrcode-generator 1.4.4), `fonts/`, `icons/`.
 
