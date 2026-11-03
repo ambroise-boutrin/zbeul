@@ -2,7 +2,7 @@
 
 Les jeux de soirée qui mettent le zbeul, sur un seul téléphone ou sur tous les téléphones de la bande.
 
-**Jeux :** Undercover (équipes possibles), Loup-garou (18 rôles, narrateur IA avec bruitages), Dans ta tête (mode inclinaison), Action ou Vérité (gages en cascade), Je n'ai jamais, Blind test (extraits Deezer).
+**Jeux :** Undercover (équipes possibles), Loup-garou (18 rôles, narrateur IA avec bruitages), Dans ta tête (mode inclinaison), Action ou Vérité (gages en cascade), Je n'ai jamais, Blind test (extraits Deezer), Qui de nous ? (vote secret), Mot commun, Le menteur, Échelle (chiffre secret et curseur), Bombe à mots (minuteur caché).
 
 **Autour :** profils joueurs, classement et titres de la soirée, historique, mode tournoi avec traître secret, cartes perso, mode gorgées.
 
@@ -13,13 +13,26 @@ L'hôte crée une partie sur l'accueil (code + QR code). Chacun rejoint avec `?r
 - **Undercover** : vote sur les téléphones.
 - **Blind test** : buzzer sur chaque téléphone.
 - **Je n'ai jamais** : chacun répond « déjà fait » / « jamais », l'hôte voit qui.
-- **Action ou Vérité** : la carte arrive sur le téléphone du joueur concerné. Temps réel via Supabase Realtime (canaux `zbeul:CODE`, broadcast + presence, aucune table).
+- **Action ou Vérité** : la carte arrive sur le téléphone du joueur concerné.
+- **Qui de nous ?, Mot commun, Le menteur, Échelle** : chacun répond en secret sur son téléphone (vote, mot, curseur) ; ceux qui n'en ont pas répondent sur le tel de l'hôte. Ces cinq jeux sont dans `jeux.js`. Temps réel via Supabase Realtime (canaux `zbeul:CODE`, broadcast + presence, aucune table).
 
 **Fiabilité :** identité permanente par téléphone, présence réannoncée au retour de veille, ping toutes les 15 s, renvoi automatique des rôles et questions en attente, reprise de la salle si l'hôte recharge l'appli (12 h), retardataires ajoutés aux votes en cours.
 
 **Secret :** rôles, questions et réponses chiffrés de bout en bout (ECDH P-256 + AES-GCM) entre l'hôte et chaque téléphone ; messages leurres la nuit au Loup-garou pour ne pas trahir qui agit.
 
 **Serveur :** le projet Supabase est en offre gratuite (pause après 7 jours sans activité) ; l'appli fait une requête légère par jour pour le garder éveillé.
+
+## Sur ordinateur
+À partir de 900 px de large, l'accueil passe sur deux colonnes (jeux à gauche, équipe et multi à droite) et les écrans de jeu s'élargissent avec des textes plus gros. Sur mobile, rien ne change.
+
+Raccourcis clavier (désactivés quand on tape dans un champ) :
+- **Partout** : `Échap` revient en arrière, `Entrée` lance la partie depuis les réglages.
+- **Passe le tel** : `Espace` montre le secret, puis passe au suivant.
+- **Dans ta tête** : `→` ou `Espace` = trouvé, `←` = passe, `Échap` arrête la manche. Le joueur qui devine tourne le dos à l'écran.
+- **Action ou Vérité** : `A` action, `V` vérité, `Entrée` fait, `R` je refuse.
+- **Je n'ai jamais** : `Espace` carte suivante.
+
+Le mode inclinaison est masqué sur les appareils sans écran tactile.
 
 ## Stack
 Site 100 % statique, aucun build : `index.html`, `voice.js` (répliques du narrateur), `sw.js` (hors ligne), `manifest.webmanifest`, `lib/` (supabase-js 2.45.4, qrcode-generator 1.4.4), `fonts/`, `icons/`.
@@ -29,3 +42,7 @@ Site 100 % statique, aucun build : `index.html`, `voice.js` (répliques du narra
 
 ## Déploiement
 Vercel, branché sur ce dépôt : chaque push sur `main` redéploie. Pour forcer la mise à jour du cache hors ligne, incrémenter `VERSION` dans `sw.js`.
+
+## Crédits
+- Illustrations : [game-icons.net](https://game-icons.net) (Lorc, Delapouite et contributeurs), licence [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). Générées dans `icons.js`.
+- Polices : Luckiest Guy et Baloo 2 (SIL Open Font License), dans `fonts/`.

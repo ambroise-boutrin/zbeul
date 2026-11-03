@@ -1,0 +1,336 @@
+/* ============================================================
+   ZBEUL · Le Plateau
+   Identité « plateau de jeu télé » cartoon. Chargé après le <style>
+   d'index.html : redéfinit les variables, les polices et le style
+   des composants, et remplace les anciennes ambiances par jeu.
+   ============================================================ */
+@font-face{font-family:"Luckiest Guy";src:url("fonts/luckiest.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"Baloo 2";src:url("fonts/baloo2.woff2") format("woff2");font-weight:500 800;font-display:swap}
+
+:root,body,body[data-game]{
+  --stage:#1A2A9E; --stage-deep:#16083F;
+  --line:#1A0F3D;           /* contour cartoon */
+  --bulb:#FFE38A; --gold:#FFC22E;
+  --red:#FF3346; --red-d:#B5132A;
+  --acc:#FF3346; --acc-l:#FF7A85; --acc-d:#A00B2A;  /* couleur du jeu en cours */
+  --ground:var(--stage); --on-ground:#FFFFFF;
+  --paper:#FFFFFF; --ink:#1A0F3D; --field:#F1F0FF; --muted:#5A5486;
+  --pink:#FF3D9A; --blue:#2B4BFF; --mint:#10B97A; --violet:#7A3CFF; --shadow:var(--line);
+  --display:"Luckiest Guy","Arial Black",Impact,sans-serif;
+  --body:"Baloo 2",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --pop:cubic-bezier(.34,1.56,.64,1); --ease:cubic-bezier(.2,.8,.2,1);
+  color-scheme:light;
+}
+body[data-game=uc]{--acc:#2B4BFF;--acc-l:#6C86FF;--acc-d:#14238F}
+body[data-game=lg]{--acc:#7A3CFF;--acc-l:#A57BFF;--acc-d:#3C1696;--stage:#20146E;--stage-deep:#0B0630}
+body[data-game=dt]{--acc:#FF8A00;--acc-l:#FFB84D;--acc-d:#A84E00}
+body[data-game=av]{--acc:#FF2E7E;--acc-l:#FF73A8;--acc-d:#A00B48}
+body[data-game=jn]{--acc:#10B97A;--acc-l:#4FE0A8;--acc-d:#06704A}
+body[data-game=bt]{--acc:#00A8E8;--acc-l:#4FD2FF;--acc-d:#005E8A}
+
+/* ---------- le studio ---------- */
+body,body[data-game],body[data-game][data-phase]{
+  background-color:var(--stage-deep);color:var(--on-ground);font-family:var(--body);font-weight:600;font-size:16.5px;line-height:1.45;
+  background-image:radial-gradient(90% 50% at 50% 0%,color-mix(in srgb,var(--stage) 55%,#5A7BFF) 0%,transparent 70%),linear-gradient(180deg,var(--stage) 0%,color-mix(in srgb,var(--stage) 55%,#2A1580) 55%,var(--stage-deep) 100%);
+  background-attachment:fixed;background-size:auto;transition:background-color .5s}
+body[data-game=lg][data-phase=day]{--stage:#3B5BFF;--stage-deep:#2A1580}
+#fx{display:none!important}
+.studio{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.studio .beam{position:absolute;top:-10%;width:60vmax;height:130vh;transform-origin:50% 0;filter:blur(18px);opacity:.34;mix-blend-mode:screen;
+  background:conic-gradient(from 168deg at 50% 0%,transparent 0deg,rgba(160,200,255,.9) 10deg,rgba(255,255,255,.95) 12deg,rgba(160,200,255,.9) 14deg,transparent 24deg)}
+.studio .beam.l{left:-22vmax;animation:zbSweepL 9s ease-in-out infinite alternate}
+.studio .beam.r{right:-22vmax;animation:zbSweepR 11s ease-in-out infinite alternate}
+@keyframes zbSweepL{from{transform:rotate(-28deg)}to{transform:rotate(-2deg)}}
+@keyframes zbSweepR{from{transform:rotate(28deg)}to{transform:rotate(4deg)}}
+.studio .floor{position:absolute;left:-20%;right:-20%;bottom:-10%;height:42vh;transform:perspective(500px) rotateX(62deg);transform-origin:50% 100%;opacity:.45;
+  background-image:linear-gradient(rgba(25,198,255,.55) 2px,transparent 2px),linear-gradient(90deg,rgba(25,198,255,.55) 2px,transparent 2px);background-size:60px 60px;
+  -webkit-mask-image:linear-gradient(transparent,#000 60%);mask-image:linear-gradient(transparent,#000 60%)}
+.studio .doodles{position:absolute;inset:0;color:#fff;opacity:.07}
+.studio .doodles svg{position:absolute;width:64px;height:64px}
+.wrap{position:relative;z-index:1}
+
+/* ---------- barre du haut ---------- */
+.zbtop{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.zblive{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-size:12px;letter-spacing:.08em;background:var(--red);color:#fff;padding:6px 12px 4px;border-radius:8px;border:2px solid var(--line);box-shadow:0 0 18px rgba(255,51,70,.6)}
+.zblive i{width:8px;height:8px;border-radius:50%;background:#fff;animation:zbBlink 1.2s steps(2) infinite}
+@keyframes zbBlink{50%{opacity:.15}}
+.zbsound{display:inline-flex;align-items:center;gap:6px;border:2px solid rgba(255,255,255,.4);background:rgba(10,15,58,.45);color:#fff;border-radius:999px;padding:6px 12px;font:700 14px var(--body)}
+.zbsound svg{width:18px;height:18px}
+.zbsound[aria-pressed=false] .wv{opacity:.15}
+
+/* ---------- l'enseigne lumineuse (header) ---------- */
+header{position:relative;display:flex!important;flex-direction:column;align-items:center!important;justify-content:center!important;gap:6px!important;text-align:center;
+  margin:4px auto 6px;width:100%;max-width:560px;border-radius:28px;padding:26px 18px 20px;
+  background:linear-gradient(180deg,var(--acc-l),var(--acc) 55%,var(--acc-d));
+  box-shadow:inset 0 0 0 5px rgba(0,0,0,.18),inset 0 0 0 8px var(--gold),0 16px 34px -10px rgba(0,0,0,.65),0 0 60px color-mix(in srgb,var(--acc) 45%,transparent)}
+body[data-game=home] header{background:linear-gradient(180deg,#FF5A4E,#E8262F 50%,#A80E1E)}
+header .zbwob{position:absolute;inset:-4px;border:4px solid var(--line);border-radius:inherit;pointer-events:none;filter:url(#zbBoil)}
+header .zbbulbs{position:absolute;inset:0;pointer-events:none}
+.zbbulbs span{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:#FFF6D0;box-shadow:0 0 8px 2px rgba(255,227,138,.9);animation:zbChase 1.2s steps(1) infinite}
+.zbbulbs span:nth-child(3n+2){animation-delay:.4s}.zbbulbs span:nth-child(3n){animation-delay:.8s}
+@keyframes zbChase{0%{opacity:1}33%,100%{opacity:.22;box-shadow:none}}
+.logoimg{display:none!important}
+.logo,body[data-game] .logo,body[data-game=home] .logo{position:relative;transform:none!important;animation:none!important;background:none;border:none;padding:0;text-align:center;
+  font-family:var(--display)!important;font-weight:400;color:var(--bulb)!important;font-size:clamp(56px,17vw,104px);line-height:.95;letter-spacing:.06em;
+  -webkit-text-stroke:2px #4A1500;paint-order:stroke fill;
+  text-shadow:0 1px 0 #FFB000,0 2px 0 #F39A00,0 3px 0 #E48600,0 4px 0 #D07400,0 5px 0 #B85F00,0 6px 0 #9C4B00,0 7px 0 #5A1D00,0 10px 14px rgba(0,0,0,.5),0 0 30px rgba(255,220,120,.55)}
+body:not([data-game=home]) .logo{font-size:clamp(34px,10vw,58px);line-height:1.05}
+.logo br{display:none}
+.logo span,body[data-game] .logo span{background:none!important;color:inherit!important;padding:0;margin:0;border:0!important;box-shadow:none!important}
+.logo #l2{display:inline;background:none!important;color:inherit!important;padding:0;margin:0 0 0 .25em}
+.logo #l2[hidden]{display:none}
+.logo .zl{display:inline-block;animation:zbBob 2.4s var(--ease) infinite}
+@keyframes zbBob{0%,70%,100%{transform:none}80%{transform:translateY(-6px) rotate(-3deg)}90%{transform:translateY(1px)}}
+.tag,header .tag{position:relative;margin:0!important;transform:none;background:none;border:none;padding:0;color:#fff!important;font-family:var(--display);font-weight:400;
+  font-size:clamp(15px,4.4vw,20px);letter-spacing:.07em;text-transform:none;text-shadow:0 2px 0 var(--line);white-space:normal}
+
+/* ---------- typographie ---------- */
+h2,body[data-game] h2{font-family:var(--display);font-weight:400;font-size:clamp(22px,6.2vw,28px);line-height:1.15;letter-spacing:.04em;text-transform:none;color:var(--ink)}
+.label{font-family:var(--display);font-weight:400;font-size:13px;letter-spacing:.08em;text-transform:none;color:var(--acc-d)}
+.big,body[data-game] .big{font-family:var(--display);font-weight:400;letter-spacing:.04em;line-height:1.1;text-transform:none;text-shadow:none}
+.hint{color:var(--muted)}
+.say,body[data-game] .say{font-family:var(--display);font-weight:400;letter-spacing:.03em;line-height:1.25}
+.cardtxt,body[data-game] .cardtxt{font-family:var(--display);font-weight:400;letter-spacing:.03em;line-height:1.3;text-shadow:none}
+.foot{color:rgba(255,255,255,.75);opacity:1}
+.err{color:#C4102E}
+
+/* ---------- panneaux ---------- */
+.card,body[data-game] .card,body[data-game] #jn-play .card{color:var(--ink);background:var(--paper);background-image:none;border:3px solid var(--line);border-radius:26px;
+  box-shadow:0 7px 0 var(--line),0 18px 30px -12px rgba(0,0,0,.5);backdrop-filter:none;-webkit-backdrop-filter:none;margin-top:0;padding:20px;text-align:left}
+body[data-game] .scr>.card::before{display:none}
+.card h2:first-child,.card .label+h2{margin-top:0}
+.banner,body[data-game] .banner{color:#fff;border:3px solid var(--line);border-radius:26px;transform:rotate(-1.5deg);background:linear-gradient(160deg,var(--acc-l),var(--acc) 60%)!important;
+  box-shadow:0 7px 0 var(--line),0 0 50px color-mix(in srgb,var(--acc) 60%,transparent)}
+.banner h2,.banner .big{color:#fff;text-shadow:0 3px 0 var(--line)}
+
+/* ---------- champs ---------- */
+input[type=text],select,body[data-game] input[type=text]{font:700 17px var(--body);color:var(--ink);background:var(--field);border:2px solid color-mix(in srgb,var(--line) 25%,transparent);border-radius:14px;padding:11px 14px}
+input[type=text]:focus,select:focus{outline:3px solid var(--gold);outline-offset:1px;border-color:var(--line)}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+
+/* ---------- boutons « buzzer » ---------- */
+.btn,body[data-game] .btn,body[data-game] .btn:not(.alt):not(.mint):not(.violet){position:relative;font-family:var(--display);font-weight:400;font-size:18px;letter-spacing:.05em;text-transform:none;
+  color:#fff;border:3px solid var(--line);border-radius:18px;padding:14px 18px 12px;background:linear-gradient(180deg,#FF6A6F,var(--red) 45%,#D7142A);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.55),inset 0 -4px 0 rgba(0,0,0,.18),0 6px 0 var(--line);text-shadow:0 2px 0 rgba(26,15,61,.45);transition:transform .08s,box-shadow .08s}
+.btn:active,body[data-game] .btn:active{transform:translateY(4px);box-shadow:inset 0 2px 0 rgba(255,255,255,.55),inset 0 -2px 0 rgba(0,0,0,.18),0 2px 0 var(--line)}
+.btn.blue,body[data-game] .btn.blue{background:linear-gradient(180deg,#6C86FF,#2B4BFF 50%,#1A33D6)}
+.btn.mint,body[data-game] .btn.mint{background:linear-gradient(180deg,#4FE0A8,#10B97A 50%,#0A9461);color:#fff}
+.btn.violet,body[data-game] .btn.violet{background:linear-gradient(180deg,#A57BFF,#7A3CFF 50%,#5B22D9)}
+.btn.alt,body[data-game] .btn.alt{background:#fff;color:var(--ink);text-shadow:none}
+.btn:disabled{opacity:.5}
+.btn small{font-family:var(--body);font-weight:700;letter-spacing:0;text-shadow:none}
+.ghost{color:var(--ink);background:none;border:2.5px dashed color-mix(in srgb,var(--line) 45%,transparent);border-radius:16px;padding:12px;font:800 15px var(--body)}
+.back,body[data-game] .back{display:inline-flex;align-items:center;gap:6px;background:rgba(10,15,58,.45);color:#fff;border:2px solid rgba(255,255,255,.4);border-radius:999px;padding:7px 15px;font:700 14px var(--body)}
+.x{border:2px solid color-mix(in srgb,var(--line) 30%,transparent);border-radius:12px;background:var(--field);color:var(--ink)}
+.step button{border:2px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font-family:var(--display);box-shadow:0 3px 0 var(--line)}
+.step button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--line)}
+.step output{font-family:var(--display);color:var(--acc-d)}
+.toggle{border:2px solid var(--line);background:var(--field)}
+.toggle::after{background:var(--line)}
+.toggle[aria-pressed=true]{background:var(--mint)}
+.toggle[aria-pressed=true]::after{background:#fff;box-shadow:0 0 0 2px var(--line)}
+.seg,body[data-game] .seg{border:3px solid var(--line);border-radius:16px;box-shadow:0 4px 0 var(--line)}
+.seg button{background:#fff;color:var(--ink);font:800 14px var(--body)}
+.seg button+button,body[data-game] .seg button+button{border-left:3px solid var(--line)}
+.seg button[aria-pressed=true],body[data-game] .seg button[aria-pressed=true]{background:var(--acc);color:#fff;box-shadow:none}
+.setting{border-top:2px dashed color-mix(in srgb,var(--line) 18%,transparent)}
+.li{border-bottom:2px dashed color-mix(in srgb,var(--line) 18%,transparent)}
+.drink{background:var(--line);color:#fff;border-radius:14px}
+
+/* ---------- jetons (chips), pastilles ---------- */
+.chip,body[data-game] .chip{border:3px solid var(--line);border-radius:16px;background:#fff;color:var(--ink);font:800 16px var(--body);box-shadow:0 4px 0 var(--line)}
+.chip.on,body[data-game] .chip.on{background:var(--acc);color:#fff}
+.chip.dead{box-shadow:none}
+.pill{border:2px solid var(--line);font-family:var(--display);font-weight:400;letter-spacing:.06em;text-transform:none}
+
+/* ---------- le secret (passe le tel) ---------- */
+.secret,body[data-game] .secret,body[data-game=lg] .secret{min-height:220px;border:3px solid var(--line);border-radius:24px;color:#fff;
+  background:#050A2E repeating-linear-gradient(0deg,rgba(255,255,255,.04) 0 2px,transparent 2px 4px);box-shadow:inset 0 0 0 5px #1B2B9C,inset 0 0 0 8px var(--gold),0 7px 0 var(--line);font:800 18px var(--body)}
+.secret small{color:#B9C2FF;opacity:1}
+.secret.open,body[data-game] .secret.open{background:#050A2E;color:var(--bulb)}
+.secret .word{font-family:var(--display);letter-spacing:.05em;line-height:1.15;color:var(--bulb);text-shadow:0 0 18px rgba(255,227,138,.55)}
+body[data-game] .secret.open::after{display:none}
+.progress i{border:2px solid var(--line);background:#fff}
+.progress i.done{background:var(--line)}
+.progress i.now{background:var(--acc)}
+.pstar{width:104px;height:104px;margin:0 auto 6px;border-radius:50%;border:4px solid var(--line);box-shadow:0 0 0 4px var(--gold),0 0 36px rgba(255,227,138,.6);background:var(--pc,#FFC22E) center/cover;
+  display:grid;place-items:center;font-size:52px;line-height:1;animation:zbSlam .5s var(--pop) both}
+@keyframes zbSlam{from{transform:scale(.3) rotate(-8deg);opacity:0}to{transform:none;opacity:1}}
+
+/* ---------- accueil : les tuiles ---------- */
+.ticker{display:none!important}
+.tiles{gap:14px}
+.tile,#home .tile,.tile[data-g]{position:relative;overflow:visible;border:3px solid var(--line);border-radius:24px;padding:0;min-height:0;text-align:left;color:#fff;transform:none;
+  background:var(--td,#8E0716)!important;background-image:none!important;box-shadow:none!important;display:block}
+.tile::after,.tile[data-g]::after{display:none!important}
+.tile .zt{position:relative;display:flex;flex-direction:column;gap:6px;min-height:170px;border-radius:21px;padding:14px;overflow:hidden;
+  background:linear-gradient(160deg,var(--tl,#FF7A85) 0%,var(--tc,#FF3346) 55%);box-shadow:inset 0 2px 0 rgba(255,255,255,.55);transform:translateY(-7px);transition:transform .08s}
+.tile:active .zt{transform:translateY(-2px)}
+@media(hover:hover){.tile:hover{transform:translateY(-3px) rotate(-1deg)!important}.tile:hover .zic{transform:scale(1.12) rotate(-8deg)}}
+.tile .zic{width:56px;height:56px;flex:none;border-radius:50%;display:grid;place-items:center;background:#fff;color:var(--td);border:3px solid var(--line);box-shadow:0 4px 0 var(--line);transition:transform .3s var(--pop)}
+.tile .zic svg{width:34px;height:34px;fill:currentColor}
+.tile .t,.tile[data-g] .t,body[data-game] .tile .t{font-family:var(--display)!important;font-weight:400!important;font-size:clamp(19px,5.2vw,24px);line-height:1.12;letter-spacing:.045em;text-transform:none;color:#fff;
+  -webkit-text-stroke:1.5px var(--line);paint-order:stroke fill;text-shadow:0 3px 0 var(--line)!important;margin-top:auto}
+.tile .d{font-size:14px;line-height:1.36;font-weight:600;color:rgba(255,255,255,.95)}
+.tile .m{position:static;order:5;align-self:flex-start;max-width:100%;margin:2px 0 0;white-space:normal;line-height:1.25;border-radius:10px!important;font-family:var(--display);font-size:12px;letter-spacing:.05em;text-transform:none;background:rgba(10,15,58,.38);border-radius:999px;padding:4px 9px 2px;color:#fff}
+.tile .zt::after{content:"";position:absolute;inset:-40% auto auto -30%;width:60%;height:180%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent);transform:rotate(20deg) translateX(-160%)}
+.tile.zshine .zt::after{animation:zbShine 1.1s ease-out}
+@keyframes zbShine{to{transform:rotate(20deg) translateX(420%)}}
+.tile[data-g=uc]{--tc:#2B4BFF;--tl:#6C86FF;--td:#14238F}
+.tile[data-g=lg]{--tc:#7A3CFF;--tl:#A57BFF;--td:#3C1696}
+.tile[data-g=dt]{--tc:#FF8A00;--tl:#FFB84D;--td:#A84E00}
+.tile[data-g=av]{--tc:#FF2E7E;--tl:#FF73A8;--td:#A00B48}
+.tile[data-g=jn]{--tc:#10B97A;--tl:#4FE0A8;--td:#06704A}
+.tile[data-g=bt]{--tc:#00A8E8;--tl:#4FD2FF;--td:#005E8A}
+.pickgrid .tile .zt{min-height:96px}
+.pickgrid .tile .d{display:none}
+.homebtns .btn{font-size:15px;padding:12px 6px 10px}
+.homebtns .btn small{font-size:12px;opacity:.9}
+#home .zbteam{display:none}
+
+/* ---------- carte de titre (intro de chaque jeu) ---------- */
+#intro,body[data-game] #intro{background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--acc) 70%,#fff) 0%,var(--acc) 35%,var(--stage-deep) 85%);color:#fff}
+#intro .in-t{font-family:var(--display);letter-spacing:.05em;color:var(--bulb);-webkit-text-stroke:2px #4A1500;paint-order:stroke fill;
+  text-shadow:0 2px 0 #F39A00,0 4px 0 #D07400,0 6px 0 #9C4B00,0 8px 0 #5A1D00,0 0 30px rgba(255,220,120,.6)}
+#intro .in-s{font-family:var(--display);letter-spacing:.06em;font-size:18px;text-shadow:0 2px 0 var(--line)}
+
+/* ---------- dans ta tête, blind test, tournoi ---------- */
+.dtword,body[data-game=dt] .dtword{border:3px solid var(--line);border-radius:28px;background:#050A2E;color:var(--bulb);box-shadow:inset 0 0 0 6px #1B2B9C,inset 0 0 0 9px var(--gold),0 8px 0 var(--line)}
+.dtword .w{font-family:var(--display);letter-spacing:.05em;text-shadow:0 0 22px rgba(255,227,138,.55)}
+.timer,body[data-game=dt] .timer{border:3px solid var(--line);background:#fff;height:18px}
+.timer i,body[data-game=dt] .timer i{background:repeating-linear-gradient(45deg,var(--red) 0 12px,#FF7A85 12px 24px)}
+.spinbox{border:3px solid var(--line);border-radius:26px;box-shadow:inset 0 0 0 6px #1B2B9C,inset 0 0 0 9px var(--gold),0 8px 0 var(--line);background:#050A2E;color:var(--bulb)}
+.crownstage{border:3px solid var(--line);border-radius:26px;box-shadow:0 8px 0 var(--line)}
+.buzz{border:5px solid var(--line)}
+.gbar .tr i{background:var(--acc)}
+.avb{border:3px solid var(--line);background-size:cover;background-position:center}
+.avb.ph{font-size:0}
+.picker{border:2.5px dashed color-mix(in srgb,var(--line) 40%,transparent);border-radius:16px}
+.zbph{display:flex;gap:8px;flex-wrap:wrap}
+.zbph label,.zbph button{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--line);background:#fff;color:var(--ink);border-radius:12px;padding:8px 12px;font:800 14px var(--body);cursor:pointer;box-shadow:0 3px 0 var(--line)}
+.zbph input{position:absolute;width:1px;height:1px;opacity:0}
+.zbph svg{width:18px;height:18px}
+
+/* ---------- cartes de rôle : illustrations au lieu des emojis ---------- */
+.rcard .em svg{width:1em;height:1em;fill:#FFF6DD;filter:drop-shadow(0 6px 10px rgba(0,0,0,.55))}
+.rcard .nm{font-family:var(--display);font-weight:400;letter-spacing:.04em}
+.rcard .pw{font-family:var(--body);font-weight:600}
+
+/* ---------- la grande roue ---------- */
+.zw-ov{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;
+  padding:calc(20px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  background:radial-gradient(circle at 50% 30%,color-mix(in srgb,var(--acc) 55%,transparent),rgba(5,9,40,.92) 70%);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);animation:zbFade .25s ease-out}
+@keyframes zbFade{from{opacity:0}}
+.zw-ov h2,body[data-game] .zw-ov h2{color:#fff;text-shadow:0 3px 0 var(--line);margin:0;font-size:clamp(26px,8vw,40px)}
+.zw-ov p{margin:0;color:#DDE2FF;font-weight:700}
+.zw-wrap{position:relative;width:min(340px,82vw,52vh);aspect-ratio:1;contain:paint;padding-top:8px}
+.zw-wheel{position:absolute;left:0;right:0;bottom:0;top:8px;transition:transform 4.6s cubic-bezier(.1,.62,.08,1);will-change:transform}
+.zw-wheel svg{width:100%;height:100%;display:block;filter:drop-shadow(0 14px 22px rgba(0,0,0,.5))}
+.zw-pointer{position:absolute;left:50%;top:0;width:44px;height:56px;margin-left:-22px;z-index:2;transform-origin:50% 20%;filter:drop-shadow(0 4px 4px rgba(0,0,0,.5))}
+.zw-pointer.tick{animation:zbTick .12s ease-out}
+@keyframes zbTick{50%{transform:rotate(-16deg)}}
+.zw-hub{position:absolute;left:50%;top:calc(50% + 4px);width:24%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;z-index:2;
+  background:radial-gradient(circle at 35% 30%,#FFF6C8,var(--gold) 45%,#B57600 100%);box-shadow:0 6px 14px rgba(0,0,0,.5);display:grid;place-items:center;font-family:var(--display);color:#7A3600;font-size:22px}
+.zw-label{font-family:var(--display);font-size:24px;letter-spacing:.06em;color:var(--bulb);text-shadow:0 3px 0 var(--line);min-height:1.3em;margin:0}
+.zw-ov .btn{min-width:220px}
+/* roue des gages (Action ou vérité) */
+.wheel{border:4px solid var(--line);box-shadow:0 8px 0 var(--line)}
+.wheel::after{border:3px solid var(--line);background:radial-gradient(circle at 35% 30%,#FFF6C8,var(--gold) 45%,#B57600 100%)}
+.pointer{color:var(--gold);text-shadow:0 2px 0 var(--line)}
+
+/* ---------- flash ---------- */
+.zbflash{position:fixed;inset:0;pointer-events:none;z-index:79;background:radial-gradient(circle at 50% 40%,rgba(255,240,190,.85),rgba(255,200,80,.2) 50%,transparent 70%);opacity:0}
+.zbflash.go{animation:zbFlash .9s ease-out}
+@keyframes zbFlash{12%{opacity:1}100%{opacity:0}}
+
+/* ---------- entrées d'écran : une seule, partout ---------- */
+.scr,body[data-game] .scr{animation:zbIn .4s var(--pop) both}
+@keyframes zbIn{from{opacity:0;transform:translateY(16px) scale(.98)}}
+
+@media (prefers-reduced-motion:reduce){
+  .studio .beam,.zbbulbs span,.logo .zl,.zblive i,.tile.zshine .zt::after,.scr,.pstar{animation:none!important}
+  .zw-wheel{transition-duration:.6s}
+}
+
+/* ---------- compléments roue + photo ---------- */
+.zw-wheel text{font-family:var(--display);stroke:none}
+.zbph label{position:relative}
+.zbph label svg{fill:currentColor}
+.zbteam .hint{margin:0}
+.secret .pstar{display:none}
+
+/* ============================================================
+   Corrections de l'audit (2026-11-03)
+   ============================================================ */
+/* les 5 nouveaux jeux : une couleur chacun, et une couleur de secours */
+.tile[data-g=qd]{--tc:#F0304A;--tl:#FF7A85;--td:#A00B22}
+.tile[data-g=mc]{--tc:#4FAE1F;--tl:#8BDB55;--td:#2D6D0C}
+.tile[data-g=mt]{--tc:#0F9C8F;--tl:#4FD6C8;--td:#065E56}
+.tile[data-g=ec]{--tc:#C42BC4;--tl:#E57AE5;--td:#7A0F7A}
+.tile[data-g=bm]{--tc:#3A3560;--tl:#6C66A0;--td:#1C1838}
+body[data-game=qd]{--acc:#F0304A;--acc-l:#FF7A85;--acc-d:#A00B22}
+body[data-game=mc]{--acc:#4FAE1F;--acc-l:#8BDB55;--acc-d:#2D6D0C}
+body[data-game=mt]{--acc:#0F9C8F;--acc-l:#4FD6C8;--acc-d:#065E56}
+body[data-game=ec]{--acc:#C42BC4;--acc-l:#E57AE5;--acc-d:#7A0F7A}
+body[data-game=bm]{--acc:#3A3560;--acc-l:#6C66A0;--acc-d:#1C1838}
+.tile .zic{color:var(--td,#8E0716)}
+#tiles .tile[data-g],.pickgrid .tile[data-g]{transform:none!important;box-shadow:none!important;background-image:none!important}
+@media(hover:hover){#tiles .tile[data-g]:hover,.pickgrid .tile[data-g]:hover{transform:translateY(-3px) rotate(-1deg)!important}}
+.tile[data-g] .t{font-family:var(--display)!important}
+.homebtns .btn,body[data-game] .homebtns .btn{font-size:clamp(12px,3.4vw,15px);letter-spacing:0;padding-left:4px;padding-right:4px}
+
+/* longs textes : Baloo 2, la police d'affiche reste aux titres et aux mots secrets */
+.say,body[data-game] .say,body[data-game=lg] .say{font-family:var(--body);font-weight:800;letter-spacing:0;line-height:1.3;font-size:clamp(21px,5.8vw,27px)}
+body[data-game=lg] .say::first-letter{color:inherit;font-size:inherit}
+
+/* bouton du tournoi : au style plateau, et la page lui laisse la place */
+#tourBtn{font:400 15px var(--display)!important;letter-spacing:.04em;color:#1A0F3D!important;background:linear-gradient(180deg,#FFE38A,var(--gold) 55%,#E39A00)!important;
+  border:3px solid var(--line)!important;border-radius:16px!important;box-shadow:0 5px 0 var(--line)!important;padding:12px 16px 10px!important;min-height:48px}
+#tourBtn b{font-family:var(--display)!important}
+body.tour .wrap{padding-bottom:96px}
+
+/* carte de rôle au style plateau */
+.rcard{background:#fff!important;border:3px solid var(--line);box-shadow:0 7px 0 var(--line),0 18px 30px -12px rgba(0,0,0,.5);border-radius:24px}
+.rcard,.rcard.village{--t1:#18C98A;--t2:#06704A;--gl:#FFFFFF}
+.rcard.wolf{--t1:#FF4A5C;--t2:#8E0716;--gl:#FFFFFF}
+.rcard.solo{--t1:#A57BFF;--t2:#3C1696;--gl:#FFFFFF}
+.rcard .in{border:3px solid var(--line)!important;outline:none!important;border-radius:16px;background:radial-gradient(circle at 50% 38%,var(--t1),var(--t2) 78%)!important}
+.rcard .tm{font-family:var(--display);font-weight:400;font-size:5cqw;letter-spacing:.08em;text-transform:none;color:#fff;background:rgba(26,15,61,.45);border-radius:999px;padding:4px 12px 2px}
+.rcard .cn{display:none}
+.rcard .orb::after{border:3px solid rgba(255,255,255,.55)}
+.rcard .nm{font-size:10cqw;text-shadow:0 3px 0 var(--line);-webkit-text-stroke:1px var(--line);paint-order:stroke fill}
+.rcard .rule{background:rgba(255,255,255,.6);height:2px}
+.rcard .pw{font-family:var(--body)!important;font-weight:700;font-size:5cqw;color:#fff}
+.rcard.back .in{background:radial-gradient(circle at 50% 45%,#3B5BFF,#16083F 75%)!important}
+
+/* contrastes : jetons et boutons choisis en teinte foncée */
+.chip.on,body[data-game] .chip.on{background:var(--acc-d);color:#fff}
+.seg button[aria-pressed=true],body[data-game] .seg button[aria-pressed=true]{background:var(--acc-d);color:#fff}
+.zblive{background:#D7142A;font-size:13px}
+
+/* zones tactiles d'au moins 44 px */
+.toggle::before{content:"";position:absolute;inset:-6px -4px}
+.step button{min-width:44px;min-height:44px}
+.zbsound{min-height:44px;padding:8px 14px}
+#multiCopy{min-height:44px}
+.foot a{display:inline-block;padding:10px 2px;margin:-10px 0}
+
+/* Mes cartes : les 6 onglets sur deux lignes */
+#cuType,body[data-game] #cuType{display:flex;flex-wrap:wrap;gap:8px;border:none;box-shadow:none;border-radius:0;overflow:visible;background:none}
+#cuType button,body[data-game] #cuType button,#cuType button+button{flex:1 1 30%;min-height:44px;border:3px solid var(--line)!important;border-radius:14px;box-shadow:0 3px 0 var(--line);white-space:nowrap}
+
+/* Action ou vérité : une couleur par choix */
+body[data-game=av] #avA.btn{background:linear-gradient(180deg,#FF73A8,#FF2E7E 50%,#D0105E)!important;animation:none}
+body[data-game=av] #avV.btn{background:linear-gradient(180deg,#6C86FF,#2B4BFF 50%,#1A33D6)!important;animation:none}
+
+/* petites illustrations dans le texte */
+.zbi{width:1.25em;height:1.25em;fill:currentColor;vertical-align:-.28em;margin-right:.3em}
+
+/* ordi : réglages sur deux colonnes, les joueurs à gauche */
+@media (min-width:1100px){
+  body:has(section.scr:not([hidden])>.zbteam) .wrap{max-width:1180px!important}
+  section.scr:not([hidden]):has(>.zbteam){display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);column-gap:24px;row-gap:16px;align-items:start}
+  section.scr:not([hidden]):has(>.zbteam)>*{grid-column:2;margin-top:0}
+  section.scr:not([hidden]):has(>.zbteam)>.back{grid-column:1/-1;justify-self:start}
+  section.scr:not([hidden]):has(>.zbteam)>.zbteam{grid-column:1;grid-row:2/span 8;position:sticky;top:16px}
+}

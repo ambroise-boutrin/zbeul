@@ -1,7 +1,9 @@
 const VERSION="zbeul-v13";
-const CORE=["./","index.html","voice.js","lib/supabase.js","lib/qrcode.js","manifest.webmanifest",
+const CORE=["./","index.html","voice.js","jeux.js","lib/supabase.js","lib/qrcode.js","manifest.webmanifest",
  "fonts/dela.woff2","fonts/archivo.woff2","fonts/specialelite.woff2","fonts/cinzel.woff2","fonts/bungee.woff2","fonts/righteous.woff2","fonts/alfaslab.woff2",
  "icons/icon-192.png","icons/icon-512.png","icons/maskable-512.png","icons/apple-touch-icon.png","icons/favicon-32.png","icons/logo-256.png","lib/jsqr.js"];
+/* Le Plateau : ses fichiers ; voice.js (1,9 Mo) se met en cache seulement quand on joue au Loup-garou */
+CORE.push("plateau.css","plateau.js","icons.js","fonts/luckiest.woff2","fonts/baloo2.woff2");CORE.splice(CORE.indexOf("voice.js"),1);
 self.addEventListener("install",e=>{e.waitUntil(caches.open(VERSION).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==VERSION).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
 self.addEventListener("fetch",e=>{
