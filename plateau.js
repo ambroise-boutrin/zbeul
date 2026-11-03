@@ -24,7 +24,7 @@ const NS="http://www.w3.org/2000/svg";
   for(const k in ICONS)s+=`<symbol id="zi-${k}" viewBox="0 0 512 512">${ICONS[k]}</symbol>`;
   s+=`</defs></svg>`;
   document.body.insertAdjacentHTML("afterbegin",s);
-  if(!REDUCE){let sd=1;const t=$("zbTurb");setInterval(()=>{if(document.hidden)return;sd=sd%4+1;t.setAttribute("seed",sd)},140)}
+  if(!REDUCE&&matchMedia("(min-width:700px)").matches){let sd=1;const t=$("zbTurb");setInterval(()=>{if(document.hidden)return;sd=sd%4+1;t.setAttribute("seed",sd)},140)}
 })();
 const ico=(k,cls="")=>ICONS[k]?`<svg class="${cls}" viewBox="0 0 512 512" aria-hidden="true"><use href="#zi-${k}"/></svg>`:"";
 
