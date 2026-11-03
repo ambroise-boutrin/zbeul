@@ -13,11 +13,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="ZBEUL">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="preload" href="fonts/dela.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
 <script src="lib/supabase.js" defer></script>
 <script src="lib/qrcode.js" defer></script>
-<script src="voice.js" defer></script>
 </head>
 <body>
 <style>
@@ -495,12 +493,14 @@ header .tag{margin-left:auto}
 body:not([data-game=home]) .logoimg{display:none}
 </style>
 <link rel="stylesheet" href="plateau.css">
+<script src="icons.js" defer></script>
+<script src="plateau.js" defer></script>
 
 <div id="fx" aria-hidden="true"></div>
 <div id="intro" hidden aria-hidden="true"><div class="in-t"></div><div class="in-s"></div></div>
 <div class="wrap">
   <header>
-    <img class="logoimg" src="icons/logo-256.png" alt="" width="58" height="58"><button class="logo" id="logo" type="button" aria-label="Retour au menu"><b id="l1" style="font-weight:400">ZBEUL</b><br><span id="l2"></span></button>
+    <img class="logoimg" loading="lazy" src="icons/logo-256.png" alt="" width="58" height="58"><button class="logo" id="logo" type="button" aria-label="Retour au menu"><b id="l1" style="font-weight:400">ZBEUL</b><br><span id="l2"></span></button>
     <div class="tag" id="tag">jeux de soirée</div>
   </header>
 
@@ -2516,8 +2516,6 @@ setTheme("home");renderPlayers();
   addEventListener("appinstalled",()=>card.hidden=true);
 })();
 </script>
-<script src="icons.js"></script>
-<script src="plateau.js"></script>
 
 </body>
 </html>

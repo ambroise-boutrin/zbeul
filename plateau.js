@@ -121,7 +121,7 @@ if(typeof setTheme==="function"){const _setTheme=setTheme;
 letters();reBulbs();
 
 /* ---------- tuiles de l'accueil ---------- */
-const TILE_ICON={uc:"uc",lg:"lg",dt:"dt",av:"av",jn:"jn",bt:"bt"};
+const TILE_ICON={uc:"uc",lg:"lg",dt:"dt",av:"av",jn:"jn",bt:"bt",qd:"qd",mc:"mc",mt:"mt",ec:"ec",bm:"bm"};
 function decorateTile(t){if(t.querySelector(".zt"))return;const zt=document.createElement("span");zt.className="zt";
   const g=t.dataset.g;zt.innerHTML=`<span class="zic">${ico(TILE_ICON[g]||(ICONS[g]?g:"star"))}</span>`;
   [...t.childNodes].forEach(n=>zt.appendChild(n));t.appendChild(zt)}
@@ -142,11 +142,13 @@ if(team){team.classList.add("zbteam");teamHome=document.createComment("team");te
   const lb=team.querySelector(".label");if(lb)lb.textContent="Les candidats";
   const hint=document.createElement("p");hint.className="hint";hint.style.margin="0";hint.textContent="Touche la pastille pour prendre ta photo, ou choisir un emoji.";
   $("players").before(hint)}
-const SETUPS={"uc-setup":"renderUcSetup","lg-setup":"renderLgSetup","dt-setup":"renderDtSetup","bt-setup":"renderBtSetup","av-setup":null,"jn-setup":null,"tour-setup":"renderTourSetup"};
+/* tout écran « *-setup » reçoit la carte des joueurs, y compris les jeux ajoutés plus tard */
+const RENDER={"uc-setup":"renderUcSetup","lg-setup":"renderLgSetup","dt-setup":"renderDtSetup","bt-setup":"renderBtSetup","tour-setup":"renderTourSetup"};
+const isSetup=id=>/-setup$/.test(id)&&!!$(id);
 let curScr="home";
-function refreshSetup(){const fn=SETUPS[curScr];if(fn&&typeof window[fn]==="function"){try{window[fn]()}catch(e){}}}
+function refreshSetup(){const fn=RENDER[curScr];if(fn&&typeof window[fn]==="function"){try{window[fn]()}catch(e){}}}
 function placeTeam(id){if(!team)return;
-  if(id in SETUPS){const sec=$(id);if(!sec)return;const anchor=sec.querySelector(":scope>.back");if(anchor)anchor.after(team);else sec.prepend(team)}
+  if(isSetup(id)){const sec=$(id);if(!sec)return;const anchor=sec.querySelector(":scope>.back");if(anchor)anchor.after(team);else sec.prepend(team)}
   else if(team.parentNode!==teamHome.parentNode||team.previousSibling!==teamHome)teamHome.after(team)}
 /* l'accueil ne bloque plus : les noms se vérifient au moment de lancer */
 if(typeof validPlayers==="function"){const _vp=validPlayers;
@@ -157,7 +159,8 @@ if(team){let rt=0;$("players").addEventListener("input",()=>{clearTimeout(rt);rt
 
 if(typeof show==="function"){const _show=show;
   window.show=show=function(id){placeTeam(id);curScr=id;_show.apply(this,arguments);
-    if(id in SETUPS){try{renderPlayers()}catch(e){}}
+    if(isSetup(id)){try{renderPlayers()}catch(e){}}
+    if(/^lg/.test(id))loadVoice();
     if(id==="lg-mj"||id==="bt-play"){musWanted=false;stopMusic()}else{musWanted=true;if(soundOn&&AC)startMusic()}
     fx.whoosh()}}
 
@@ -264,13 +267,36 @@ if(mine&&mine.onclick){const _mine=mine.onclick;
 if(typeof ucTurn==="function"){const _uc=ucTurn;
   window.ucTurn=ucTurn=function(){_uc.apply(this,arguments);try{
     const who=$("starter").textContent.replace(/ commence$/,"");const alive=game.players.filter(p=>p.alive);
-    const idx=alive.findIndex(p=>p.name===who);if(idx<0||alive.length<2)return;
+    const idx=alive.findIndex(p=>p.name===who);if(idx<0||alive.length<2||game.turn!==1)return;
     const segs=alive.map((p,i)=>{const ph=photoOf(p.name),pr=prof(p.name);return{img:ph||null,text:ph?null:pr.e,label:p.name,color:SEGC[i%SEGC.length]}});
     setTimeout(()=>wheelShow({title:"Qui commence ?",sub:"Tour "+game.turn,segs,idx,cta:"C'est parti",hub:"?"}),350)}catch(e){}}}
 
 /* ---------- cartes de rôle : illustrations à la place des emojis ---------- */
 if(typeof roleCard==="function"){const _rc=roleCard;
   window.roleCard=roleCard=function(key){const c=_rc.apply(this,arguments);const em=c.querySelector(".em");if(em&&ROLE_ICON[key]&&ICONS[ROLE_ICON[key]])em.innerHTML=ico(ROLE_ICON[key]);return c}}
+
+/* ---------- voix du narrateur : chargées seulement pour le Loup-garou ---------- */
+let voiceP=null;
+function loadVoice(){if(window.CLIPS||voiceP)return voiceP;voiceP=new Promise(res=>{const sc=document.createElement("script");sc.src="voice.js";sc.async=true;sc.onload=sc.onerror=()=>res();document.head.appendChild(sc)});return voiceP}
+window.zbLoadVoice=loadVoice;
+document.addEventListener("pointerdown",e=>{if(e.target.closest("#lgVoiceTest,#lgStart"))loadVoice()},true);
+
+/* ---------- nouveaux jeux : le bon endroit pour ajouter des joueurs ---------- */
+if(typeof needPlayers==="function"){const _np=needPlayers;
+  window.needPlayers=needPlayers=function(errId){const ok=_np.apply(this,arguments);if(!ok){const e=$(errId);if(e)e.textContent=e.textContent.replace("Ajoutez-en sur l'accueil.","Ajoutez-en dans « Qui joue ? » juste au-dessus.")}return ok}}
+
+/* ---------- réglages : le nom du jeu est déjà sur l'enseigne ---------- */
+document.querySelectorAll("section.scr[id$=-setup]").forEach(sec=>{const c=[...sec.children].find(x=>x.classList&&x.classList.contains("card")&&!x.classList.contains("zbteam"));
+  const h=c&&c.querySelector(":scope>h2");if(h&&!h.dataset.keep)h.textContent="Les réglages"});
+
+/* ---------- illustrations à la place des derniers emojis de l'interface ---------- */
+const scan=$("scanBtn");if(scan)scan.innerHTML=ico("camera","zbi")+"<span>Scanner le QR code</span>";
+function phoneIcons(root){root.querySelectorAll(".tile .m, #multiPick .hint").forEach(m=>{if(m.textContent.includes("📱"))m.innerHTML=esc(m.textContent).replace(/📱\s?/g,ico("phone","zbi"))})}
+if(typeof multiPickRender==="function"){const _mp=multiPickRender;window.multiPickRender=multiPickRender=function(){_mp.apply(this,arguments);phoneIcons(document)}}
+phoneIcons(document);
+
+/* ---------- confettis aux couleurs du plateau ---------- */
+if(typeof confetti==="function"){const _cf=confetti;window.confetti=confetti=function(){return _cf.call(this,["#FFC22E","#FF3346","#19C6FF","#FF3D9A","#22DD8E","#FFFFFF","#8C5CFF"])}}
 
 /* premier rendu */
 try{renderPlayers()}catch(e){}
