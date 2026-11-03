@@ -29,3 +29,7 @@ Site 100 % statique, aucun build : `index.html`, `voice.js` (répliques du narra
 
 ## Déploiement
 Vercel, branché sur ce dépôt : chaque push sur `main` redéploie. Pour forcer la mise à jour du cache hors ligne, incrémenter `VERSION` dans `sw.js`.
+
+## Crédits
+- Illustrations : [game-icons.net](https://game-icons.net) (Lorc, Delapouite et contributeurs), licence [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). Générées dans `icons.js`.
+- Polices : Luckiest Guy et Baloo 2 (SIL Open Font License), dans `fonts/`.

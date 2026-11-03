@@ -494,6 +494,7 @@ header .tag{margin-left:auto}
 .logoimg{width:58px;height:58px;border-radius:16px;border:3px solid var(--ink);box-shadow:3px 3px 0 var(--pink);transform:rotate(-4deg);flex:none}
 body:not([data-game=home]) .logoimg{display:none}
 </style>
+<link rel="stylesheet" href="plateau.css">
 
 <div id="fx" aria-hidden="true"></div>
 <div id="intro" hidden aria-hidden="true"><div class="in-t"></div><div class="in-s"></div></div>
@@ -1001,6 +1002,7 @@ body:not([data-game=home]) .logoimg{display:none}
     </div>
   </section>
   <p class="hint center foot" style="font-size:12px">Les gorgées, c'est optionnel. Eau, soda ou jus, ça compte aussi. On boit avec modération et personne ne force personne.</p>
+  <p class="hint center foot" style="font-size:11px">Illustrations : <a href="https://game-icons.net" target="_blank" rel="noopener" style="color:inherit">game-icons.net</a> (Lorc, Delapouite et contributeurs), licence CC BY 3.0.</p>
 </div>
 
 <script>
@@ -2514,6 +2516,8 @@ setTheme("home");renderPlayers();
   addEventListener("appinstalled",()=>card.hidden=true);
 })();
 </script>
+<script src="icons.js"></script>
+<script src="plateau.js"></script>
 
 </body>
 </html>
