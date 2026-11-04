@@ -312,3 +312,64 @@ if(typeof confetti==="function"){const _cf=confetti;window.confetti=confetti=fun
 /* premier rendu */
 try{renderPlayers()}catch(e){}
 })();
+
+/* ================= MODE APPLI (téléphone) =================
+   Barre de titre fixe, onglets en bas, transitions entre écrans,
+   feuille « Quitter ? » native. Actif seulement sous 700 px. */
+(function appShell(){
+  const MQ=matchMedia("(max-width:699px)"),REDUCE=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const TOP=["home","glob","custom","tour-setup"];
+  const ic=d=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const TABS=[
+    ["jeux","Jeux",ic('<rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/>')],
+    ["multi","Multi",ic('<rect x="2.5" y="5" width="8" height="14" rx="2"/><rect x="13.5" y="5" width="8" height="14" rx="2"/><path d="M6.5 16h0M17.5 16h0"/>')],
+    ["tour-setup","Tournoi",ic('<path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8"/>')],
+    ["glob","Scores",ic('<path d="M5 20V11M12 20V5M19 20v-6"/>')],
+    ["custom","Cartes",ic('<rect x="4" y="3" width="12" height="16" rx="2"/><path d="M8 21h10a2 2 0 0 0 2-2V7"/>')]];
+  const bar=document.createElement("div");bar.className="zbapp";
+  bar.innerHTML=`<button class="zbback" type="button" aria-label="Retour">${ic('<path d="M15 5l-7 7 7 7"/>')}</button><div class="zbttl"></div><div class="zbslot"></div>`;
+  const tabs=document.createElement("nav");tabs.className="zbtabs";tabs.setAttribute("aria-label","Navigation");
+  tabs.innerHTML=TABS.map(([k,l,s])=>`<button type="button" data-tab="${k}">${s}<span>${l}</span></button>`).join("");
+  const sheet=document.createElement("div");sheet.className="zbsheet";sheet.hidden=true;
+  sheet.innerHTML=`<div class="zbsh-in" role="dialog" aria-modal="true"><b>Quitter la partie ?</b><p>La partie en cours sera perdue.</p><button type="button" class="btn" data-q="1">Quitter</button><button type="button" class="ghost" data-q="0">Continuer à jouer</button></div>`;
+  document.body.append(bar,tabs,sheet);
+  const snd=document.querySelector(".zbsound");
+  function mount(){const on=MQ.matches;document.body.classList.toggle("zbm",on);
+    if(snd){if(on)bar.querySelector(".zbslot").append(snd);else{const t=document.querySelector(".zbtop");t&&t.append(snd)}}}
+  MQ.addEventListener?MQ.addEventListener("change",mount):MQ.addListener(mount);mount();
+
+  let tab="jeux",prev="home";
+  const depth=id=>TOP.includes(id)?0:/-setup$/.test(id)?1:2;
+  const title=id=>{if(id==="home")return tab==="multi"?"Multi":"ZBEUL";
+    const s=document.getElementById(id),h=s&&s.querySelector("h2");
+    if(id==="glob")return"Scores";if(id==="custom")return"Mes cartes";if(id==="tour-setup")return"Tournoi";
+    const l1=document.getElementById("l1"),l2=document.getElementById("l2");
+    const t=[l1&&l1.textContent,l2&&!l2.hidden&&l2.textContent].filter(Boolean).join(" ");
+    return t&&t!=="ZBEUL"?t:(h?h.textContent:"ZBEUL")};
+  function paint(id){document.body.dataset.tab=id==="home"?tab:id;
+    bar.querySelector(".zbttl").textContent=title(id);
+    bar.classList.toggle("top",depth(id)===0);bar.classList.toggle("brand",id==="home"&&tab==="jeux");
+    tabs.hidden=depth(id)!==0;
+    tabs.querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.tab===(id==="home"?tab:id)))}
+  function anim(id,from){if(!MQ.matches||REDUCE)return;const s=document.getElementById(id);if(!s)return;
+    const a=depth(id),b=depth(from);const c=a>b?"zb-push":a<b?"zb-pop":"zb-fade";
+    s.classList.remove("zb-push","zb-pop","zb-fade");void s.offsetWidth;s.classList.add(c);
+    s.addEventListener("animationend",()=>s.classList.remove(c),{once:true})}
+  const _s=window.show;
+  window.show=show=function(id){const from=prev;prev=id;if(id!=="home"&&TOP.includes(id))tab="jeux";
+    _s.apply(this,arguments);paint(id);if(id!==from)anim(id,from)};
+  tabs.addEventListener("click",e=>{const b=e.target.closest("[data-tab]");if(!b)return;const k=b.dataset.tab;
+    if(k==="jeux"||k==="multi"){const was=document.body.dataset.tab;tab=k;
+      if(prev!=="home")show("home");else{paint("home");if(was!==k)anim("home",k==="multi"?"x-setup":"home")}}
+    else show(k);
+    window.scrollTo(0,0)});
+  function back(){const s=document.getElementById(prev);const bk=s&&s.querySelector(".back");
+    if(bk){bk.click();return}
+    if(depth(prev)>=2&&prev!=="pass"||prev==="pass"){sheet.hidden=false;return}
+    show("home")}
+  bar.querySelector(".zbback").onclick=back;
+  sheet.addEventListener("click",e=>{const q=e.target.closest("[data-q]");if(e.target===sheet||q){sheet.hidden=true;if(q&&q.dataset.q==="1")show("home")}});
+  /* petit retour haptique (Android) */
+  document.addEventListener("click",e=>{if(MQ.matches&&e.target.closest("button,.tile")&&navigator.vibrate){try{navigator.vibrate(8)}catch(_){}}},true);
+  paint(document.body.dataset.scr||"home");
+})();
