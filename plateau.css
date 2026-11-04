@@ -334,3 +334,172 @@ body[data-game=av] #avV.btn{background:linear-gradient(180deg,#6C86FF,#2B4BFF 50
   section.scr:not([hidden]):has(>.zbteam)>.back{grid-column:1/-1;justify-self:start}
   section.scr:not([hidden]):has(>.zbteam)>.zbteam{grid-column:1;grid-row:2/span 8;position:sticky;top:16px}
 }
+
+/* ============================================================
+   Téléphone : rendu repensé pour l'écran (2026-11-03, retour d'Ambroise)
+   ============================================================ */
+/* la face de chaque tuile remplit toute la tuile : plus de « socle » de hauteur variable */
+.tile,#home .tile,.tile[data-g]{display:flex!important;flex-direction:column}
+.tile .zt{flex:1 1 auto}
+@media (max-width:699px){
+  /* barre du haut : juste le bouton son, rond, dans le coin */
+  .zbtop{position:absolute;top:calc(8px + env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px));z-index:5}
+  .zblive{display:none}
+  .zbsound{width:44px;height:44px;padding:0;justify-content:center;border-radius:50%}
+  .zbsound span{display:none}
+  .wrap{padding-top:6px}
+  /* l'enseigne : compacte sur l'accueil, en bandeau sur les écrans de jeu */
+  header{margin:6px 52px 14px 0;width:auto;max-width:none;padding:14px 12px 12px;border-radius:20px;gap:2px!important}
+  body[data-game=home] .logo{font-size:clamp(40px,12vw,56px)}
+  .tag,header .tag{font-size:13px}
+  body:not([data-game=home]) header{padding:10px 12px 9px}
+  body:not([data-game=home]) .logo{font-size:clamp(22px,7vw,30px);letter-spacing:.04em}
+  body:not([data-game=home]) .tag{display:none}
+  body:not([data-game=home]) .zbbulbs{display:none}
+  body:not([data-game=home]) .logo .zl{animation:none}
+  body:not([data-game=home]) header{margin-bottom:10px;box-shadow:inset 0 0 0 4px rgba(0,0,0,.18),inset 0 0 0 6px var(--gold),0 10px 22px -10px rgba(0,0,0,.6)}
+  body[data-game=home] header{padding-top:20px;padding-bottom:16px}
+  .zbbulbs span{width:7px;height:7px;margin:-3.5px 0 0 -3.5px}
+  /* les jeux en liste : une ligne par jeu, tout se lit d'un coup d'œil */
+  .tiles,#tiles{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:12px!important}
+  .tile .zt{display:grid;grid-template-columns:52px minmax(0,1fr);grid-template-areas:"ic t" "ic d" "ic m";column-gap:14px;row-gap:3px;align-items:center;
+    min-height:0;padding:12px 14px;border-radius:19px;transform:translateY(-5px)}
+  .tile{border-radius:22px}
+  .tile .zic{grid-area:ic;width:52px;height:52px;align-self:center;box-shadow:0 3px 0 var(--line)}
+  .tile .zic svg{width:30px;height:30px}
+  .tile .t,.tile[data-g] .t,body[data-game] .tile .t{grid-area:t;margin:0;font-size:20px;line-height:1.1;-webkit-text-stroke:1px var(--line);text-shadow:0 2px 0 var(--line)!important}
+  .tile .d{grid-area:d;font-size:13.5px;line-height:1.3}
+  .tile .m{grid-area:m;justify-self:start;width:max-content;max-width:100%;margin:2px 0 0;font-size:11.5px;padding:3px 8px 1px}
+  .tile .zt::after{display:none}
+  .pickgrid .tile .zt{min-height:0}
+  /* effets allégés : pas de flou géant ni d'animation de fond sur téléphone */
+  .studio .beam{filter:none;opacity:.12;animation:none}
+  .studio .beam.l{transform:rotate(-18deg)}.studio .beam.r{transform:rotate(18deg)}
+  .studio .floor{display:none}
+  .studio .doodles{opacity:.05}
+  body,body[data-game],body[data-game][data-phase]{background-attachment:scroll}
+  /* cartes un peu moins épaisses */
+  .card,body[data-game] .card,body[data-game] #jn-play .card{padding:16px;border-radius:22px;box-shadow:0 5px 0 var(--line),0 14px 24px -12px rgba(0,0,0,.5)}
+  .back,body[data-game] .back{padding:6px 13px;font-size:13.5px}
+  .prow{gap:8px}
+  .prow input{height:46px;min-height:0;padding:0 14px;font-size:17px}
+  .prow .avb{width:46px;height:46px;flex:0 0 46px;font-size:22px}
+  .prow .x{width:44px;height:46px;flex:0 0 44px}
+  .players{gap:8px}
+  body:not([data-game=home]) .back{margin:0 0 10px}
+  body:not([data-game=home]) header{margin-bottom:0!important}
+}
+
+/* ================= MODE APPLI (téléphone) ================= */
+body:not(.zbm) .zbapp,body:not(.zbm) .zbtabs,body:not(.zbm) .zbsheet{display:none!important}
+@media (max-width:699px){
+  html,body{overscroll-behavior:none}
+  body.zbm{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;
+    background:radial-gradient(circle,rgba(255,255,255,.06) 1.3px,transparent 1.8px) 0 0/12px 12px,var(--stage,#3A2A8C)!important;background-attachment:scroll!important}
+  body.zbm input,body.zbm textarea{-webkit-user-select:text;user-select:text}
+  body.zbm ::-webkit-scrollbar{display:none}
+  body.zbm button,body.zbm .tile{touch-action:manipulation}
+  body.zbm .studio .beam,body.zbm .studio .floor{display:none!important}
+  /* l'ancienne enseigne et la barre « en direct » laissent la place à la barre d'appli */
+  body.zbm .wrap>header,body.zbm .zbtop{display:none!important}
+  body.zbm .wrap{padding:calc(64px + env(safe-area-inset-top,0px)) 14px calc(24px + env(safe-area-inset-bottom,0px))!important}
+  body.zbm[data-tab=jeux] .wrap,body.zbm[data-tab=multi] .wrap,body.zbm[data-tab=glob] .wrap,body.zbm[data-tab=custom] .wrap,body.zbm[data-tab=tour-setup] .wrap{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))!important}
+  body.zbm section.scr .back{display:none!important}
+  body.zbm .ticker{display:none!important}
+
+  /* barre du haut */
+  .zbapp{display:none}
+  body.zbm .zbapp{display:grid;grid-template-columns:48px 1fr 48px;align-items:center;position:fixed;z-index:40;left:0;right:0;top:0;
+    padding:calc(6px + env(safe-area-inset-top,0px)) 8px 6px;background:var(--acc);border-bottom:3px solid var(--line);box-shadow:0 3px 0 rgba(0,0,0,.25)}
+  body.zbm .zbapp .zbttl{text-align:center;font-family:var(--display);font-size:21px;line-height:1;color:#fff;letter-spacing:.04em;
+    -webkit-text-stroke:1.5px var(--line);paint-order:stroke fill;text-shadow:2px 2px 0 var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-top:3px}
+  body.zbm .zbapp.brand{background:repeating-conic-gradient(from 0deg at 50% 140%,rgba(255,255,255,.1) 0 8deg,transparent 8deg 16deg),#F0304A}
+  body.zbm .zbapp.brand .zbttl{font-size:30px;color:#FFE14D;-webkit-text-stroke:2px var(--line);text-shadow:3px 3px 0 var(--line)}
+  body.zbm .zbback{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:rgba(0,0,0,.18);color:#fff;border:0;padding:0}
+  body.zbm .zbback svg{width:24px;height:24px}
+  body.zbm .zbapp.top .zbback{visibility:hidden}
+  body.zbm .zbslot{display:flex;justify-content:flex-end}
+  body.zbm .zbslot .zbsound{width:44px;height:44px;border-radius:14px;background:rgba(0,0,0,.18)!important;border:0!important;box-shadow:none!important;padding:0;display:grid;place-items:center}
+  body.zbm .zbslot .zbsound span{display:none}
+
+  /* onglets du bas */
+  .zbtabs{display:none}
+  body.zbm .zbtabs:not([hidden]){display:grid;grid-template-columns:repeat(5,1fr);position:fixed;z-index:40;left:0;right:0;bottom:0;
+    padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));background:#fff;border-top:3px solid var(--line)}
+  body.zbm .zbtabs button{display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:0;padding:6px 0 4px;border-radius:14px;color:#8B86B0;font-family:var(--display);font-size:11.5px;letter-spacing:.04em}
+  body.zbm .zbtabs button svg{width:26px;height:26px;transition:transform .2s}
+  body.zbm .zbtabs button.on{color:var(--line);background:#FFE14D;box-shadow:inset 0 0 0 2.5px var(--line)}
+  body.zbm .zbtabs button.on svg{transform:translateY(-1px) scale(1.08)}
+
+  /* onglets de l'accueil : Jeux / Multi */
+  body.zbm[data-tab=jeux] #home .hside{display:none!important}
+  body.zbm[data-tab=multi] #home .hmain{display:none!important}
+  body.zbm[data-tab=multi] #home .zbteam{display:none!important}
+  body.zbm #home .homebtns{display:none!important}
+  body.zbm #home{display:block}
+
+  /* tuiles « autocollant » 2 colonnes */
+  body.zbm #tiles{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:16px 12px!important;padding-top:6px}
+  body.zbm #tiles .tile{position:relative;overflow:visible!important;min-height:0!important;height:auto!important;border-radius:16px!important;padding:0!important;
+    background:radial-gradient(circle,rgba(255,255,255,.22) 1.6px,transparent 2px) 0 0/9px 9px,var(--tc)!important;
+    border:3px solid var(--line)!important;box-shadow:4px 5px 0 var(--line)!important;transition:transform .12s,box-shadow .12s}
+  body.zbm #tiles .tile:nth-child(3n+1){transform:rotate(-1.2deg)!important}
+  body.zbm #tiles .tile:nth-child(3n+2){transform:rotate(.9deg)!important}
+  body.zbm #tiles .tile:nth-child(3n){transform:rotate(-.4deg)!important}
+  body.zbm #tiles .tile:active{transform:translate(3px,4px) rotate(0)!important;box-shadow:1px 1px 0 var(--line)!important}
+  body.zbm #tiles .tile .zt{position:relative;z-index:1;display:flex!important;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    height:100%;min-height:0!important;padding:12px 8px 14px!important;gap:6px;transform:none!important;background:none!important;box-shadow:none!important;border:0!important}
+  body.zbm #tiles .tile .zt::before,body.zbm #tiles .tile .zt::after{display:none!important}
+  body.zbm #tiles .tile .d{display:none!important}
+  body.zbm #tiles .tile .zic{position:relative;width:76px!important;height:76px!important;display:grid;place-items:center;background:none!important;box-shadow:none!important;border:0!important;margin:0}
+  body.zbm #tiles .tile .zic::before{content:"";position:absolute;inset:-4px;border-radius:50%;z-index:-1;
+    background:repeating-conic-gradient(rgba(255,255,255,.2) 0 12deg,transparent 12deg 24deg);
+    -webkit-mask:radial-gradient(circle,#000 55%,transparent 71%);mask:radial-gradient(circle,#000 55%,transparent 71%)}
+  body.zbm #tiles .tile .zic svg{position:relative;width:54px!important;height:54px!important;fill:#fff;color:#fff;transform:rotate(-6deg);filter:drop-shadow(3px 3px 0 var(--line))}
+  body.zbm #tiles .tile:nth-child(even) .zic svg{transform:rotate(5deg)}
+  body.zbm #tiles .tile .t{font-size:18px!important;line-height:1.05!important;margin:0!important;color:#fff!important;-webkit-text-stroke:2px var(--line)!important;paint-order:stroke fill;text-shadow:2px 3px 0 var(--line)!important}
+  body.zbm #tiles .tile .m{display:inline-block!important;width:max-content!important;max-width:calc(100% - 6px)!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    margin:4px 0 0!important;padding:4px 9px 2px!important;font-size:10.5px!important;background:#FFE14D!important;color:var(--line)!important;
+    border:2px solid var(--line)!important;box-shadow:2px 2px 0 var(--line)!important;border-radius:8px!important;transform:rotate(-3deg)}
+  body.zbm #tiles .tile:nth-child(even) .m{transform:rotate(2.5deg)}
+  body.zbm #tiles .tile:nth-child(3n+1)::before{content:""!important;display:block!important;position:absolute;top:-10px;left:50%;width:60px;height:19px;margin-left:-30px;
+    background:rgba(255,246,200,.8)!important;border:0!important;transform:rotate(-4deg)!important;z-index:3;box-shadow:0 1px 2px rgba(0,0,0,.2)!important}
+  body.zbm #tiles .tile::after{content:"✦"!important;display:block!important;position:absolute;inset:auto;top:8px;right:10px;width:auto!important;height:auto!important;padding:0!important;
+    border:0!important;background:none!important;box-shadow:none!important;transform:none!important;font-size:17px;color:#FFE14D;text-shadow:1px 1px 0 var(--line);z-index:2;line-height:1}
+  body.zbm #tiles .tile:nth-child(3n+2)::after{content:"✸"!important;top:auto;bottom:8px;color:#fff}
+  body.zbm #tiles .tile:nth-child(3n)::after{content:"✧"!important;left:10px;right:auto}
+  body.zbm #tiles .tile:last-child:nth-child(odd){grid-column:1/-1}
+
+  /* boutons : appui « enfoncé » */
+  body.zbm .btn:active{transform:translateY(3px)!important}
+
+  /* transitions d'écran */
+  body.zbm .scr,body.zbm[data-game] .scr{animation:none!important}
+  body.zbm section.scr.zb-push{animation:zbPush .28s cubic-bezier(.2,.8,.2,1)!important}
+  body.zbm section.scr.zb-pop{animation:zbPop .28s cubic-bezier(.2,.8,.2,1)!important}
+  body.zbm section.scr.zb-fade{animation:zbFade .2s ease-out!important}
+  @keyframes zbPush{from{transform:translateX(38%);opacity:0}to{transform:none;opacity:1}}
+  @keyframes zbPop{from{transform:translateX(-30%);opacity:0}to{transform:none;opacity:1}}
+  @keyframes zbFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  /* feuille « Quitter ? » */
+  .zbsheet{position:fixed;inset:0;z-index:60;background:rgba(10,5,30,.55);display:flex;align-items:flex-end}
+  .zbsheet[hidden]{display:none}
+  .zbsh-in{width:100%;background:#fff;border-top:3px solid var(--line);border-radius:22px 22px 0 0;padding:22px 18px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px;animation:zbSheet .25s cubic-bezier(.2,.8,.2,1)}
+  .zbsh-in b{font-family:var(--display);font-weight:400;font-size:24px;color:var(--ink)}
+  .zbsh-in p{margin:0 0 6px;color:var(--muted)}
+  @keyframes zbSheet{from{transform:translateY(100%)}to{transform:none}}
+}
+@media (max-width:699px){
+  body.zbm .foot{display:none!important}
+  body.zbm[data-tab=multi] .foot{display:block!important;font-size:12px}
+  body.zbm[data-tab=multi] #home .hside{display:flex;flex-direction:column;gap:14px}
+  body.zbm[data-tab=multi] #installCard{order:2}
+}
+@media (max-width:699px){
+  /* bouton « Lancer » collé en bas comme dans une appli */
+  body.zbm[data-scr$="-setup"]:not([data-scr=tour-setup]) .wrap{padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))!important}
+  body.zbm[data-scr$="-setup"]:not([data-scr=tour-setup]) section.scr:not([hidden]) button[id$=Start]{position:fixed;z-index:35;left:14px;right:14px;width:auto!important;
+    bottom:calc(14px + env(safe-area-inset-bottom,0px));margin:0!important;box-shadow:0 5px 0 var(--line),0 -14px 28px 6px rgba(10,5,40,.55)!important}
+}
+@media (prefers-reduced-motion:reduce){body.zbm section.scr{animation:none!important}}
