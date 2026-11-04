@@ -373,3 +373,18 @@ try{renderPlayers()}catch(e){}
   document.addEventListener("click",e=>{if(MQ.matches&&e.target.closest("button,.tile")&&navigator.vibrate){try{navigator.vibrate(8)}catch(_){}}},true);
   paint(document.body.dataset.scr||"home");
 })();
+
+/* ---------- mise à jour de l'appli installée ----------
+   Le nouveau service worker prend la main dès qu'il est prêt : on recharge
+   aussitôt si on est sur l'accueil, sinon au prochain retour à l'accueil,
+   pour ne jamais couper une partie. On revérifie à chaque retour dans l'appli. */
+(function autoUpdate(){
+  if(!("serviceWorker" in navigator))return;
+  const had=!!navigator.serviceWorker.controller;let pending=false,done=false;
+  const atHome=()=>(document.body.dataset.scr||"home")==="home";
+  const go=()=>{if(done)return;done=true;location.reload()};
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{if(!had)return;if(atHome())go();else pending=true});
+  if(typeof show==="function"){const _s=window.show;window.show=show=function(id){_s.apply(this,arguments);if(pending&&id==="home")go()}}
+  const check=()=>navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{});
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden)check()});
+})();
