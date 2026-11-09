@@ -1824,7 +1824,7 @@ function renderDtSetup(){
   const s=$("dtScores");s.innerHTML="";
   names.map(n=>[n,dtScores[n]||0]).sort((a,b)=>b[1]-a[1]).forEach(([n,v])=>{const d=el("div","li");d.append(el("span",null,n),el("span","score",v));s.appendChild(d)});
 }
-function dtNextWord(){if(!dtDecks[dtCat])dtDecks[dtCat]=deck(DT_CATS[dtCat]);dt.word=dtDecks[dtCat]();$("dtW").textContent=dt.word;$("dtW").classList.remove("pop");void $("dtW").offsetWidth;$("dtW").classList.add("pop")}
+function dtNextWord(){if(!dtDecks[dtCat])dtDecks[dtCat]=deck(DT_CATS[dtCat]);dt.word=dtDecks[dtCat]();$("dtW").classList.remove("cd");$("dtW").textContent=dt.word;$("dtW").classList.remove("pop");void $("dtW").offsetWidth;$("dtW").classList.add("pop")}
 let wake=null;
 async function lockScreen(){try{wake=await navigator.wakeLock?.request("screen")}catch(e){}}
 function dtStart(){
@@ -1833,7 +1833,7 @@ function dtStart(){
   $("dtPlayer").textContent=dtWho;$("dtCatLbl").textContent=dtCat;$("dtClock").textContent=total;$("dtBar").style.width="100%";
   $("dtOk").disabled=$("dtPass").disabled=true;
   show("dt-play");lockScreen();
-  let c=3;const cd=()=>{$("dtCatLbl").textContent="Tel sur le front !";$("dtW").textContent=c;$("dtW").classList.remove("pop");void $("dtW").offsetWidth;$("dtW").classList.add("pop")};cd();
+  let c=3;const cd=()=>{$("dtCatLbl").textContent="Tel sur le front !";$("dtW").textContent=c;$("dtW").classList.add("cd");$("dtW").classList.remove("pop");void $("dtW").offsetWidth;$("dtW").classList.add("pop")};cd();
   dt.iv=setInterval(()=>{c--;if(c>0){cd();return}
     clearInterval(dt.iv);dt.started=true;$("dtCatLbl").textContent=dtCat;$("dtOk").disabled=$("dtPass").disabled=false;dtNextWord();
     dt.iv=setInterval(()=>{dt.left--;$("dtClock").textContent=dt.left;$("dtClock").classList.toggle("hurry",dt.left<=10);$("dtBar").style.width=(dt.left/dt.total*100)+"%";if(dt.left<=0)dtEnd()},1000)},1000);
