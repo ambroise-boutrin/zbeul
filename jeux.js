@@ -180,6 +180,7 @@ if(foot)foot.insertAdjacentHTML("beforebegin",html);else document.querySelector(
 /* thèmes, titres, tournoi, multi */
 Object.assign(THEMES,{qd:"le grand jury",mc:"même cerveau",mt:"qui ment ?",ec:"de 1 à 10",bm:"ça va péter"});
 Object.assign(TITLES,{qd:["QUI DE","NOUS ?"],mc:["MOT","COMMUN"],mt:["LE","MENTEUR"],ec:["ÉCHELLE",""],bm:["BOMBE","À MOTS"]});
+if(typeof GNAMES==="object")Object.assign(GNAMES,{qd:"Qui de nous ?",mc:"Mot commun",mt:"Le menteur",ec:"Échelle",bm:"Bombe à mots"});
 Object.assign(INTROS,{qd:"Le vote est secret. Le verdict, non.",mc:"Pensez pareil, marquez ensemble.",mt:"L'un d'entre vous ment.",ec:"Trouve le bon cran.",bm:"Tic… tac…"});
 Object.assign(GAMES,{qd:["Qui de nous ?",3],mc:["Mot commun",3],mt:["Le menteur",3],ec:["Échelle",3],bm:["Bombe à mots",3]});
 MULTI_GAMES.splice(MULTI_GAMES.length-1,0,["qd","Qui de nous ?","📱 vote secret"],["mc","Mot commun","📱 réponses"],["mt","Le menteur","📱 réponses + vote"],["ec","Échelle","📱 curseur"]);
@@ -277,7 +278,9 @@ function collect(o){
   function tour(){const r=offline();if(!r.length){draw();check();return}local(r[0],tour)}
   function local(n,next){
     st.local=n;box.innerHTML="";bump(box);
-    box.append(el("div","label","Passe le tel à"),el("div","big",pn(n)),el("p","hint center","Les autres, regardez ailleurs."),
+    const who=el("div","center zxwho");who.append(el("div","label","Passe le tel à"));
+    if(window.zbAvatar){who.insertAdjacentHTML("beforeend",window.zbAvatar(n));who.append(el("div","big",n))}else who.append(el("div","big",pn(n)));
+    box.append(who,el("p","hint center","Les autres, regardez ailleurs."),
       btn("C'est moi, je réponds","",()=>{
         const spec=o.spec(n);box.innerHTML="";bump(box);
         box.append(el("div","label",spec.title||""),el("p","cardtxt",spec.text||""));

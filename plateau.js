@@ -125,9 +125,13 @@ addEventListener("resize",reBulbs);
 if(window.ResizeObserver&&header)new ResizeObserver(reBulbs).observe(header);
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(reBulbs);
 
+/* carte de titre : le médaillon du jeu claque au centre */
+function introBadge(g){const it=$("intro");if(!it||it.hidden)return;let b=it.querySelector(".in-ic");
+  if(!b){b=document.createElement("div");b.className="in-ic";b.setAttribute("aria-hidden","true");it.prepend(b)}
+  b.innerHTML=ico(TILE_ICON[g]||(ICONS[g]?g:"star"));fx.whoosh()}
 const STAGE={home:"#16083F",uc:"#16083F",lg:"#0B0630",dt:"#16083F",av:"#16083F",jn:"#16083F",bt:"#16083F"};
 if(typeof setTheme==="function"){const _setTheme=setTheme;
-  window.setTheme=setTheme=function(g){_setTheme.apply(this,arguments);letters();
+  window.setTheme=setTheme=function(g){_setTheme.apply(this,arguments);letters();introBadge(g);
     try{document.querySelector('meta[name=theme-color]').content=STAGE[g]||"#16083F"}catch(e){}reBulbs()}}
 letters();reBulbs();
 
@@ -196,6 +200,7 @@ if(typeof renderPlayers==="function"){const _rp=renderPlayers;
 
 /* ---------- passe le tel : la vedette du moment ---------- */
 function avatarHTML(n){const ph=photoOf(n),p=prof(n);return ph?`<div class="pstar" style="background-image:url('${ph}')" aria-hidden="true"></div>`:`<div class="pstar" style="--pc:${p.c}" aria-hidden="true">${esc(p.e)}</div>`}
+window.zbAvatar=avatarHTML;
 if(typeof passStep==="function"){const _ps=passStep;
   window.passStep=passStep=function(){_ps.apply(this,arguments);try{const it=passQ.items[passQ.i],rn=$("rName");
     const old=rn.parentNode.querySelector(".pstar");if(old)old.remove();rn.insertAdjacentHTML("beforebegin",avatarHTML(it.name));rn.textContent=it.name;fx.whoosh()}catch(e){}}}
@@ -210,7 +215,7 @@ function wheelSVG(segs){const n=segs.length,c=210,r=188,A=360/n;wid++;
   let s=`<svg viewBox="0 0 420 420" aria-hidden="true"><defs>`;
   const pr=Math.min(40,150*Math.sin(Math.PI/n)*.9);
   segs.forEach((g,i)=>{if(g.img)s+=`<clipPath id="zwc${wid}_${i}"><circle cx="${c}" cy="${c-128}" r="${pr}"/></clipPath>`});
-  s+=`</defs><g filter="url(#zbBoil)"><circle cx="210" cy="210" r="208" fill="#1A0F3D"/><circle cx="210" cy="210" r="201" fill="#FFC22E"/></g>`;
+  s+=`</defs><circle cx="210" cy="210" r="208" fill="#1A0F3D"/><circle cx="210" cy="210" r="201" fill="#FFC22E"/>`;
   segs.forEach((g,i)=>{const a0=(i*A-90)*Math.PI/180,a1=((i+1)*A-90)*Math.PI/180,col=g.color||SEGC[i%SEGC.length];
     s+=n===1?`<circle cx="${c}" cy="${c}" r="${r}" fill="${col}" stroke="#1A0F3D" stroke-width="3"/>`
       :`<path d="M${c} ${c} L${(c+r*Math.cos(a0)).toFixed(2)} ${(c+r*Math.sin(a0)).toFixed(2)} A${r} ${r} 0 ${A>180?1:0} 1 ${(c+r*Math.cos(a1)).toFixed(2)} ${(c+r*Math.sin(a1)).toFixed(2)} Z" fill="${col}" stroke="#1A0F3D" stroke-width="3"/>`;
@@ -228,13 +233,13 @@ function celebrate(){fx.fanfare();setTimeout(fx.applause,350);vib([40,60,40]);fl
 function wheelShow({title,sub,segs,idx,cta,hub="ZB",onDone,celebrateEnd=true}){
   const ov=document.createElement("div");ov.className="zw-ov";ov.setAttribute("role","dialog");ov.setAttribute("aria-modal","true");ov.setAttribute("aria-label",title);
   ov.innerHTML=`<h2>${esc(title)}</h2>${sub?`<p>${esc(sub)}</p>`:""}<div class="zw-wrap">${POINTER}<div class="zw-wheel">${wheelSVG(segs)}</div><div class="zw-hub" aria-hidden="true">${esc(hub)}</div></div>
-    <p class="zw-label" aria-live="polite"></p><button class="btn" type="button" hidden>${esc(cta)}</button>`;
+    <p class="zw-label" aria-live="polite"></p><button class="btn zw-cta" type="button" disabled>${esc(cta)}</button>`;
   document.body.appendChild(ov);
   const w=ov.querySelector(".zw-wheel"),p=ov.querySelector(".zw-pointer"),label=ov.querySelector(".zw-label"),btn=ov.querySelector(".btn");
   const n=segs.length,A=360/n,jitter=(Math.random()-.5)*A*.6,rot=360*(REDUCE?1:6)+((360-(idx*A+A/2)+jitter)%360+360)%360,dur=REDUCE?700:4700;
   if(REDUCE)w.style.transitionDuration=".6s";
   let done=false,last=null,finished=false;
-  const finish=()=>{if(finished)return;finished=true;done=true;label.textContent=segs[idx].label;fx.crash();fx.ding();if(celebrateEnd)celebrate();setTimeout(()=>duck(false),1800);btn.hidden=false;btn.focus()};
+  const finish=()=>{if(finished)return;finished=true;done=true;label.textContent=segs[idx].label;fx.crash();fx.ding();if(celebrateEnd)celebrate();setTimeout(()=>duck(false),1800);ov.classList.add("won");btn.disabled=false;btn.focus({preventScroll:true})};
   const close=()=>{ov.remove();duck(false);onDone&&onDone()};
   btn.onclick=close;
   fx.press();vib(30);duck(true);fx.drumroll(REDUCE?600:4500);
@@ -262,11 +267,13 @@ function roleSegs(target,pool){let keys=[...new Set(pool.filter(k=>k&&LG_CARD[k]
 function roleWheel(target,pool,onDone){const {segs,idx}=roleSegs(target,pool);
   wheelShow({title:"La roue des rôles",sub:"Cache bien l'écran, c'est pour toi seul",segs,idx,cta:"Voir ma carte",hub:"?",celebrateEnd:false,onDone})}
 const secret=$("secret");
+/* une fois le secret ouvert, le bouton « J'ai capté » doit être à l'écran */
+function showNext(){requestAnimationFrame(()=>{const n=$("nextP");if(n&&!n.hidden){const r=n.getBoundingClientRect();if(r.bottom>innerHeight-8)n.scrollIntoView({block:"end",behavior:REDUCE?"auto":"smooth"})}})}
 if(secret&&secret.onclick){const _reveal=secret.onclick;
   secret.onclick=function(ev){let it=null;try{it=passQ.items[passQ.i]}catch(e){}
     if(it&&it.card&&typeof LG_CARD!=="undefined"&&LG_CARD[it.card]&&!secret.disabled){secret.disabled=true;
-      roleWheel(it.card,passQ.items.map(x=>x.card),()=>{secret.disabled=false;_reveal.call(secret,ev);fx.reveal();vib(60)});return}
-    _reveal.call(this,ev);fx.reveal();vib(60)}}
+      roleWheel(it.card,passQ.items.map(x=>x.card),()=>{secret.disabled=false;_reveal.call(secret,ev);fx.reveal();vib(60);showNext()});return}
+    _reveal.call(this,ev);fx.reveal();vib(60);showNext()}}
 const mine=$("mySecret");
 if(mine&&mine.onclick){const _mine=mine.onclick;
   mine.onclick=function(ev){let ms=null;try{ms=mySecret}catch(e){}
@@ -343,6 +350,7 @@ try{renderPlayers()}catch(e){}
   const title=id=>{if(id==="home")return tab==="multi"?"Multi":"ZBEUL";
     const s=document.getElementById(id),h=s&&s.querySelector("h2");
     if(id==="glob")return"Scores";if(id==="custom")return"Mes cartes";if(id==="tour-setup")return"Tournoi";
+    const g=document.body.dataset.game;if(typeof GNAMES==="object"&&GNAMES[g])return GNAMES[g];
     const l1=document.getElementById("l1"),l2=document.getElementById("l2");
     const t=[l1&&l1.textContent,l2&&!l2.hidden&&l2.textContent].filter(Boolean).join(" ");
     return t&&t!=="ZBEUL"?t:(h?h.textContent:"ZBEUL")};
@@ -357,7 +365,7 @@ try{renderPlayers()}catch(e){}
     s.addEventListener("animationend",()=>s.classList.remove(c),{once:true})}
   const _s=window.show;
   window.show=show=function(id){const from=prev;prev=id;if(id!=="home"&&TOP.includes(id))tab="jeux";
-    _s.apply(this,arguments);paint(id);if(id!==from)anim(id,from)};
+    _s.apply(this,arguments);paint(id);if(id!==from)anim(id,from);whyWatch(id)};
   tabs.addEventListener("click",e=>{const b=e.target.closest("[data-tab]");if(!b)return;const k=b.dataset.tab;
     if(k==="jeux"||k==="multi"){const was=document.body.dataset.tab;tab=k;
       if(prev!=="home")show("home");else{paint("home");if(was!==k)anim("home",k==="multi"?"x-setup":"home")}}
@@ -368,6 +376,22 @@ try{renderPlayers()}catch(e){}
     if(depth(prev)>=2&&prev!=="pass"||prev==="pass"){sheet.hidden=false;return}
     show("home")}
   bar.querySelector(".zbback").onclick=back;
+  /* bouton « Lancer » collé en bas : s'il est bloqué, on dit pourquoi juste au-dessus */
+  const why=document.createElement("div");why.className="zbwhy";why.hidden=true;why.setAttribute("role","status");document.body.append(why);
+  let whyMO=null,whyRaf=0;
+  function whyPaint(){whyRaf=0;const id=document.body.dataset.scr||"",sec=document.getElementById(id);
+    const on=MQ.matches&&/-setup$/.test(id)&&id!=="tour-setup"&&sec;
+    const e=on&&[...sec.querySelectorAll(".err")].find(x=>!x.hidden&&x.textContent.trim());
+    if(!e){why.hidden=true;return}
+    const fixer=e.querySelector("button");why.innerHTML="";
+    const t=document.createElement("span");t.textContent=[...e.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join("").trim()||e.textContent.trim();why.append(t);
+    if(fixer){const b=document.createElement("button");b.type="button";b.textContent=fixer.textContent;b.onclick=()=>fixer.click();why.append(b)}
+    else why.onclick=()=>e.scrollIntoView({block:"center",behavior:"smooth"});
+    why.hidden=false}
+  const whyQ=()=>{if(!whyRaf)whyRaf=requestAnimationFrame(whyPaint)};
+  function whyWatch(id){if(whyMO)whyMO.disconnect();const sec=document.getElementById(id);
+    if(sec&&/-setup$/.test(id)){whyMO=new MutationObserver(whyQ);whyMO.observe(sec,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:["hidden","disabled"]})}
+    whyQ()}
   sheet.addEventListener("click",e=>{const q=e.target.closest("[data-q]");if(e.target===sheet||q){sheet.hidden=true;if(q&&q.dataset.q==="1")show("home")}});
   /* petit retour haptique (Android) */
   document.addEventListener("click",e=>{if(MQ.matches&&e.target.closest("button,.tile")&&navigator.vibrate){try{navigator.vibrate(8)}catch(_){}}},true);

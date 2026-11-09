@@ -1132,10 +1132,11 @@ const SCREENS=[...document.querySelectorAll("section.scr")];
 let onLeave=null;
 const THEMES={bt:"en direct du studio",home:"jeux de soirée",uc:"dossier classifié",lg:"nuit de pleine lune",dt:"en direct du plateau",av:"zone interdite",jn:"au comptoir"};
 const TITLES={bt:["BLIND","TEST"],home:["ZBEUL",""],uc:["UNDER","COVER"],lg:["LOUP","GAROU"],dt:["DANS TA","TÊTE"],av:["ACTION OU","VÉRITÉ"],jn:["JE N'AI","JAMAIS"]};
+const GNAMES={bt:"Blind test",uc:"Undercover",lg:"Loup-garou",dt:"Dans ta tête",av:"Action ou vérité",jn:"Je n'ai jamais"};
 const INTROS={bt:"Fredonne, devine, domine.",uc:"Trouve l'imposteur. Ou deviens-le.",lg:"La nuit tombe sur le village…",dt:"Le tel sur le front. 3, 2, 1…",av:"Ici, on ne refuse pas. Ou alors on boit.",jn:"Les verres en l'air."};
 const seenIntro={};
 function setTheme(g){const prev=document.body.dataset.game;try{document.querySelector('meta[name=theme-color]').content={bt:"#0E1A4A",home:"#FFE14D",uc:"#15161A",lg:"#0B1026",dt:"#FF6B1A",av:"#14020B",jn:"#0F3B2E"}[g]||"#FFE14D"}catch(e){}document.body.dataset.phase="";document.body.dataset.game=g;$("tag").textContent=THEMES[g];$("l1").textContent=TITLES[g][0];$("l2").textContent=TITLES[g][1];$("l2").hidden=!TITLES[g][1];
-  if(g!==prev&&INTROS[g]&&!seenIntro[g]&&document.body.dataset.guest!=="1"&&!matchMedia("(prefers-reduced-motion: reduce)").matches){seenIntro[g]=1;const it=$("intro");it.querySelector(".in-t").textContent=TITLES[g].join(" ");it.querySelector(".in-s").textContent=INTROS[g];it.hidden=false;it.style.animation="none";void it.offsetWidth;it.style.animation="";clearTimeout(it._t);it._t=setTimeout(()=>it.hidden=true,1300)}}
+  if(g!==prev&&INTROS[g]&&!seenIntro[g]&&document.body.dataset.guest!=="1"&&!matchMedia("(prefers-reduced-motion: reduce)").matches){seenIntro[g]=1;const it=$("intro");it.querySelector(".in-t").textContent=GNAMES[g]||TITLES[g].join(" ");it.querySelector(".in-s").textContent=INTROS[g];it.hidden=false;it.style.animation="none";void it.offsetWidth;it.style.animation="";clearTimeout(it._t);it._t=setTimeout(()=>it.hidden=true,1750)}}
 $("intro").onclick=()=>$("intro").hidden=true;
 (function buildFx(){const fx=$("fx");const add=(c,st)=>{const e=el("div",c);if(st)Object.assign(e.style,st);fx.appendChild(e);return e};
   add("uc scan");add("uc mark").textContent="TOP SECRET";
@@ -1292,8 +1293,8 @@ const LG_ROLES={
  sorciere:["Sorcière","Une potion de vie, une potion de mort. Une seule fois chacune.",true],
  chasseur:["Chasseur","Si tu meurs, tu emportes quelqu'un avec toi.",true],
  cupidon:["Cupidon","La première nuit, tu lies deux amoureux. Si l'un meurt, l'autre meurt de chagrin. S'ils sont les deux derniers, ils gagnent.",true],
- salvateur:["Salvateur","Chaque nuit, tu protèges quelqu'un des loups. Jamais deux nuits de suite la même personne.",true],
- petitefille:["Petite fille","Tu peux espionner les loups la nuit en entrouvrant les yeux. S'ils te grillent, t'es cuite.",true],
+ salvateur:["Salvateur","Chaque nuit, tu protèges quelqu'un des loups. Jamais deux nuits de suite la même personne.",false],
+ petitefille:["Petite fille","Tu peux espionner les loups la nuit en entrouvrant les yeux. S'ils te grillent, t'es cuite.",false],
  ancien:["Ancien","Tu survis à la première attaque des loups.",false],
  idiot:["Idiot du village","Si le village vote contre toi, tu survis, mais tu ne votes plus.",false],
  corbeau:["Corbeau","Chaque nuit, tu désignes quelqu'un qui commencera le vote avec 2 voix contre lui.",false],
@@ -1440,9 +1441,15 @@ function lgUpdate(){
   $("lgAutoHint").hidden=!auto;
   const err=$("lgErr");
   if(n<5){err.textContent="Il faut au moins 5 joueurs, sans compter le narrateur.";err.hidden=false;$("lgStart").disabled=true}
-  else if(vill<0){err.textContent=`Trop de rôles pour ${n} joueurs. Retire ${-vill} rôle${-vill>1?"s":""} ou un loup.`;err.hidden=false;$("lgStart").disabled=true}
+  else if(vill<0){err.textContent=`Trop de rôles pour ${n} joueurs. Retire ${-vill} rôle${-vill>1?"s":""} ou un loup. `;const fix=el("button","lgfix","Ajuster pour moi");fix.type="button";fix.onclick=lgAutoFit;err.appendChild(fix);err.hidden=false;$("lgStart").disabled=true}
   else{err.hidden=true;$("lgStart").disabled=false}
 }
+/* coupe les rôles les moins essentiels jusqu'à ce que tout le monde ait une carte */
+function lgAutoFit(){const order=["bouc","flute","ange","loupblanc","infect","enfant","renard","corbeau","idiot","ancien","petitefille","salvateur","cupidon","chasseur","sorciere","voyante"];
+  const n=lgPlayersCount();
+  for(const k of order){const b=document.querySelector(`#lgRoleList [data-role="${k}"]`);if(n-lgWolves-lgOnRoles().length>=0)break;if(b&&isOn(b))b.click()}
+  if(n-lgWolves-lgOnRoles().length<0&&lgWolves>1){lgWolves=1;store.set("lg_wolves",1)}
+  lgUpdate()}
 $("lgVoice").addEventListener("click",()=>lgUpdate());
 $("lgVoiceSel").onchange=()=>{const v=$("lgVoiceSel").value;useAI=v==="__ai";store.set("lg_ai",useAI);if(!useAI){frVoice=voiceList.find(x=>x.voiceURI===v)||frVoice;store.set("lg_voice_uri",v)}};
 $("lgVoiceTest").onclick=()=>{sfx.unlock();sfx.on=isOn($("lgSfx"));sfx.howl();setTimeout(()=>speak("La nuit tombe sur le village. Tout le monde ferme les yeux."),700)};
@@ -1826,9 +1833,9 @@ function dtStart(){
   $("dtPlayer").textContent=dtWho;$("dtCatLbl").textContent=dtCat;$("dtClock").textContent=total;$("dtBar").style.width="100%";
   $("dtOk").disabled=$("dtPass").disabled=true;
   show("dt-play");lockScreen();
-  let c=3;$("dtW").textContent="Tel sur le front ! "+c;
-  dt.iv=setInterval(()=>{c--;if(c>0){$("dtW").textContent="Tel sur le front ! "+c;return}
-    clearInterval(dt.iv);dt.started=true;$("dtOk").disabled=$("dtPass").disabled=false;dtNextWord();
+  let c=3;const cd=()=>{$("dtCatLbl").textContent="Tel sur le front !";$("dtW").textContent=c;$("dtW").classList.remove("pop");void $("dtW").offsetWidth;$("dtW").classList.add("pop")};cd();
+  dt.iv=setInterval(()=>{c--;if(c>0){cd();return}
+    clearInterval(dt.iv);dt.started=true;$("dtCatLbl").textContent=dtCat;$("dtOk").disabled=$("dtPass").disabled=false;dtNextWord();
     dt.iv=setInterval(()=>{dt.left--;$("dtClock").textContent=dt.left;$("dtClock").classList.toggle("hurry",dt.left<=10);$("dtBar").style.width=(dt.left/dt.total*100)+"%";if(dt.left<=0)dtEnd()},1000)},1000);
   onLeave=()=>{clearInterval(dt.iv);try{wake&&wake.release()}catch(e){}};
 }
